@@ -264,6 +264,9 @@ def main():
                 notes.append({
                     "t": de.strftime("%m/%d/%Y %I:%M:%S %p"),
                     "off": int((nxt - de).total_seconds()) if nxt else None,
+                    # date/time of the next job the agent attached to
+                    "next": nxt.strftime("%m/%d/%Y %I:%M:%S %p") if nxt
+                            else None,
                     # did the agent log out before attaching to the next job?
                     "loggedOff": bool(nxt and logout and nxt > logout),
                 })

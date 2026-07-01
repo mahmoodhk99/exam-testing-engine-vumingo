@@ -186,7 +186,7 @@ function detailHTML(a){
     (s.dropNotes||[]).forEach(n=>{
       const txt = n.off==null
         ? 'no job attached afterwards'
-        : 'off <b>'+fmtGap(n.off)+'</b> '+(n.loggedOff?'(logged off, then next job)':'until next job attach');
+        : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
       h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)} &nbsp;&middot;&nbsp; <b>Abuse time:</b> ${txt}</td></tr>`;
     });
     s.jobs.forEach(j=>{
