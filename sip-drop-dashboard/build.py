@@ -178,10 +178,12 @@ def main():
                 remaining = [d for d in remaining if not (lo <= d <= hi)]
             else:
                 s["drops"] = 0
-        a["redjobs"] = sum(1 for s in a["sessions"]
-                           for j in s["jobs"] if j["ib"] > 1)
-        # sessions where the nailer dropped more than once
-        a["redsessions"] = sum(1 for s in a["sessions"] if s["drops"] > 1)
+            # Abuse: a nailer drop that POM did NOT record as an In Job Break
+            # means the agent dropped the nailer from the softphone. Any
+            # excess of drops over in-job breaks in a session is abuse.
+            s["abuse"] = max(0, s["drops"] - s["ib"])
+        a["abuse"] = sum(s["abuse"] for s in a["sessions"])
+        a["abuseSessions"] = sum(1 for s in a["sessions"] if s["abuse"] > 0)
         a["drops100"] = drops.get(ext, 0)
         out.append(a)
 
@@ -195,9 +197,10 @@ def main():
     html = tpl.replace("__DATA__", json.dumps(data, separators=(",", ":")))
     open(os.path.join(HERE, "index.html"), "w").write(html)
     print("Built %d agents | In Job Break drops: %d | sip:100 drops: %d | "
-          "repeat-break jobs: %d" %
+          "abuse drops (no break): %d across %d agents" %
           (len(out), data["totalIB"], data["totalDrops100"],
-           sum(a["redjobs"] for a in out)))
+           sum(a["abuse"] for a in out),
+           sum(1 for a in out if a["abuse"] > 0)))
 
 
 if __name__ == "__main__":

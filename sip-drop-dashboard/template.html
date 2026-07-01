@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIP Drop Dashboard &mdash; In Job Break vs sip:100@zain.com</title>
+<title>Nailer Drop Abuse Dashboard &mdash; sip:100@zain.com</title>
 <style>
   :root{--bg:#0f172a;--card:#1e293b;--card2:#273449;--text:#e2e8f0;--muted:#94a3b8;
         --accent:#38bdf8;--border:#334155;--red:#ef4444;--redbg:#3b1417;--good:#34d399;}
@@ -59,6 +59,8 @@
   .detail table{font-size:12px;margin-bottom:6px}
   .detail th{color:var(--muted);cursor:default}
   .detail td{border-bottom:1px solid #1c2637;color:#cbd5e1}
+  tr.redrow td{background:rgba(239,68,68,.07)}
+  tr.redrow:hover td{background:rgba(239,68,68,.14)}
   tr.red td{background:var(--redbg)!important;color:#fca5a5}
   tr.red td .b{color:#fecaca;font-weight:700}
   .pill{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted)}
@@ -69,37 +71,37 @@
 </head>
 <body>
 <header>
-  <h1>&#128246; SIP Drop Dashboard &mdash; In Job Break vs nailer drops</h1>
-  <div class="sub">Per agent: <b>In Job Break Count</b> (POM Agent Summary) compared with dropped <b>sip:100@zain.com</b> nailer calls</div>
+  <h1>&#128246; Nailer Drop Abuse Dashboard &mdash; sip:100@zain.com</h1>
+  <div class="sub">Flags agents who drop the nailer from the softphone: a <b>sip:100 drop with no matching In Job Break</b> = abuse</div>
 </header>
 <div class="wrap">
   <div class="note" id="note"></div>
   <div class="cards" id="cards"></div>
 
   <div class="panel">
-    <h2>Drops per agent</h2>
+    <h2>Abuse per agent &mdash; nailer drops without a break</h2>
     <div class="toolbar">
       <input type="search" id="q" placeholder="Search agent name or extension&hellip;">
       <select id="sortSel">
-        <option value="ib">Sort: Most In Job Break drops</option>
+        <option value="abuse">Sort: Most abuse (drops w/o break)</option>
         <option value="drops100">Sort: Most sip:100 drops</option>
-        <option value="red">Sort: Most repeat-drop sessions</option>
+        <option value="ib">Sort: Most In Job Break drops</option>
         <option value="talk">Sort: Most talk time</option>
         <option value="name">Sort: Agent name</option>
       </select>
-      <label class="chk"><input type="checkbox" id="onlyRed"> Only agents with repeat-drop sessions</label>
+      <label class="chk"><input type="checkbox" id="onlyRed"> Only flagged agents (abuse &gt; 0)</label>
       <span class="pill" id="showing"></span>
     </div>
     <table id="tbl">
       <thead><tr>
         <th class="rank">#</th>
         <th data-k="name">Agent</th>
-        <th class="num" data-k="ib">In Job<br>Breaks</th>
+        <th class="num" data-k="abuse">Abuse drops<br>(no break)</th>
+        <th class="num" data-k="abuse">Abuse<br>sessions</th>
         <th class="num" data-k="drops100">sip:100<br>drops</th>
-        <th data-k="match">Match</th>
+        <th class="num" data-k="ib">In Job<br>Breaks</th>
         <th class="num" data-k="jobs">Jobs</th>
         <th class="num" data-k="talk">Talk (min)</th>
-        <th class="num" data-k="red">Repeat-drop<br>sessions</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -117,82 +119,80 @@ function hl(s){const q=query.toLowerCase();if(!q)return esc(s);const i=String(s)
   if(i<0)return esc(s);return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length))}
 
 const totalIB=DATA.totalIB, totalD=DATA.totalDrops100;
-const totalRedSess=A.reduce((s,a)=>s+a.redsessions,0);
-const totalSess=A.reduce((s,a)=>s+a.sessions.length,0);
-const matchN=A.filter(a=>a.ib===a.drops100).length;
+const totalAbuse=A.reduce((s,a)=>s+a.abuse,0);
+const totalAbuseSess=A.reduce((s,a)=>s+a.abuseSessions,0);
+const abuseAgents=A.filter(a=>a.abuse>0).length;
 document.getElementById('note').innerHTML =
-  'Every dropped <b>sip:100@zain.com</b> nailer call is attributed to the agent login <b>session</b> whose Login&ndash;Logout window contains it. '+
-  'Expand any agent to see, <b>per session</b>, how many <b>nailer calls dropped</b> and the <b>In Job break count</b>. '+
-  'A drop registers in POM as an In Job Break, so this also cross-checks the PAS <b>In Job Break Count</b> against the contact-detail drops: '+
-  'across all agents the totals are <b>'+totalIB.toLocaleString()+'</b> in-job breaks vs <b>'+totalD.toLocaleString()+'</b> sip:100 drops '+
-  '&mdash; they match exactly for '+matchN+' of '+A.length+' agents. '+
-  'Sessions highlighted <b style="color:#fca5a5">red</b> are where the nailer dropped <b>more than once</b> in the same session.';
+  'When a nailed agent\'s <b>sip:100@zain.com</b> call drops legitimately, POM records an <b>In Job Break</b> for that session. '+
+  'So a nailer drop with <b>no matching In Job Break is abuse</b> &mdash; the agent hung up the nailer from the softphone. '+
+  'Each dropped nailer call is attributed to the login session whose Login&ndash;Logout window contains it, then compared with that '+
+  'session\'s In Job Break count: <b>abuse = nailer drops &minus; in-job breaks</b> (per session). '+
+  'Across all agents this flags <b style="color:#fca5a5">'+totalAbuse.toLocaleString()+'</b> abusive drops over <b>'+totalAbuseSess.toLocaleString()+
+  '</b> sessions by <b>'+abuseAgents+'</b> of '+A.length+' agents. '+
+  'Sessions (and agent rows) with abuse are highlighted <b style="color:#fca5a5">red</b>.';
 
 document.getElementById('cards').innerHTML=[
+  ['Abusive drops (no break)', totalAbuse.toLocaleString(),'red'],
+  ['Agents flagged', abuseAgents+' / '+A.length,'red'],
+  ['Sessions with abuse', totalAbuseSess.toLocaleString(),'red'],
   ['sip:100 nailer drops', totalD.toLocaleString(),0],
   ['In Job Break drops', totalIB.toLocaleString(),0],
-  ['Agents', A.length,0],
-  ['Login sessions', totalSess.toLocaleString(),0],
-  ['Repeat-drop sessions (&gt;1)', totalRedSess,'red'],
   ['Date period', DATA.period,0,true],
 ].map(([k,v,red,small])=>`<div class="card${red?' redcard':''}"><div class="k">${k}</div><div class="v${small?' small':''}">${v}</div></div>`).join('');
 
 const maxIB=Math.max(...A.map(a=>a.ib),1);
-let query='',sortKey='ib',onlyRed=false;
+let query='',sortKey='abuse',onlyRed=false;
 const sorters={
+  abuse:(a,b)=>b.abuse-a.abuse||b.drops100-a.drops100,
   ib:(a,b)=>b.ib-a.ib||b.drops100-a.drops100,
   drops100:(a,b)=>b.drops100-a.drops100,
-  red:(a,b)=>b.redsessions-a.redsessions||b.drops100-a.drops100,
   talk:(a,b)=>b.talk-a.talk,
   name:(a,b)=>a.name.localeCompare(b.name),
-  match:(a,b)=>(b.ib===b.drops100)-(a.ib===a.drops100),
 };
 function detailHTML(a){
   let h='';
   a.sessions.forEach(s=>{
-    const sred=s.drops>1;                 // nailer dropped more than once in this session
+    const sred=s.abuse>0;                 // nailer drop(s) without a matching In Job Break
     h+=`<div class="sesshdr${sred?' red':''}">`
       +`<span class="win">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)}</span>`
       +`<span class="metric drop">Nailer drops (sip:100): <b>${s.drops}</b></span>`
       +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
-      +(sred?`<span class="redbadge">dropped ${s.drops}&times;</span>`:'')
+      +(sred?`<span class="redbadge">&#9873; abuse: ${s.abuse} drop${s.abuse>1?'s':''} w/o break</span>`:'')
       +`</div>`;
     h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
     s.jobs.forEach(j=>{
-      const red=j.ib>1;
-      h+=`<tr class="${red?'red':''}"><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num"><span class="${red?'b':''}">${j.ib}</span></td></tr>`;
+      h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
     });
     h+='</tbody></table>';
   });
   return h;
 }
 function render(){
-  let list=A.filter(a=>(!query||a.name.toLowerCase().includes(query.toLowerCase())||a.ext.includes(query))&&(!onlyRed||a.redsessions>0));
-  list.sort(sorters[sortKey]||sorters.ib);
+  let list=A.filter(a=>(!query||a.name.toLowerCase().includes(query.toLowerCase())||a.ext.includes(query))&&(!onlyRed||a.abuse>0));
+  list.sort(sorters[sortKey]||sorters.abuse);
   const tb=document.getElementById('tbody');tb.innerHTML='';
   list.forEach((a,i)=>{
-    const tr=document.createElement('tr');tr.className='clickable';
-    const isMatch=a.ib===a.drops100;
+    const tr=document.createElement('tr');tr.className='clickable'+(a.abuse>0?' redrow':'');
     tr.innerHTML=`<td class="rank">${i+1}</td>
       <td><span class="caret">&#9656;</span> <span class="agent">${hl(a.name)}</span> <span class="ext">${hl('#'+a.ext)}</span></td>
-      <td class="num"><b>${a.ib}</b></td>
+      <td class="num">${a.abuse>0?'<span class="redbadge">'+a.abuse+'</span>':'0'}</td>
+      <td class="num">${a.abuseSessions||0}</td>
       <td class="num">${a.drops100}</td>
-      <td>${isMatch?'<span class="match">&#10003; equal</span>':'<span class="nomatch">&Delta; '+(a.drops100-a.ib)+'</span>'}</td>
+      <td class="num">${a.ib}</td>
       <td class="num">${a.jobs}</td>
-      <td class="num">${fmtMin(a.talk)}</td>
-      <td class="num">${a.redsessions?'<span class="redbadge">'+a.redsessions+'</span>':'0'}</td>`;
+      <td class="num">${fmtMin(a.talk)}</td>`;
     const det=document.createElement('tr');det.className='detail';det.style.display='none';
     det.innerHTML=`<td></td><td colspan="7">${detailHTML(a)}</td>`;
     tr.onclick=()=>{const open=det.style.display!=='none';det.style.display=open?'none':'';tr.classList.toggle('open',!open);};
     tb.appendChild(tr);tb.appendChild(det);
   });
   document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
-  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = a login session where the sip:100@zain.com nailer dropped more than once. Each expanded session shows its <b>Nailer drops</b> (sip:100 calls dropped in that Login&ndash;Logout window) and its <b>In Job breaks</b>; individual jobs are red when their break count &gt; 1. Durations in minutes. Click a row to expand.';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each expanded session shows its <b>Nailer drops</b> vs <b>In Job breaks</b>; the gap is the abuse count. Durations in minutes. Click a row to expand.';
 }
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
 document.getElementById('onlyRed').addEventListener('change',e=>{onlyRed=e.target.checked;render();});
-document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['ib','drops100','red','talk','name'].includes(sortKey)?sortKey:'ib';render();}));
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','drops100','ib','talk','name'].includes(sortKey)?sortKey:'abuse';render();}));
 render();
 </script>
 </body>
