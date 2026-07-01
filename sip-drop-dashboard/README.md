@@ -41,6 +41,13 @@ Features:
   sessions** line shows the **away time** — from the earlier session's logout
   to the next session's login (e.g. logout 05:20:33 PM → login 05:22:37 PM =
   2 min).
+- Each session header also shows **Last drop** (how long before logout the
+  nailer last dropped) and **Off after** (off time until the next login), so
+  you can see when an agent **dropped the nailer right before logging off and
+  then took an unlogged gap**. An **⚠ amber** badge flags the strong case: a
+  session with an abuse drop (no break) that is then followed by an off-gap
+  before the next login. The summary card **Dropped w/o break → then off**
+  counts these across all agents.
 - Inside each session the jobs are listed **by date/time** (chronological),
   and a **⏳ detached …** row marks idle time when the agent was **not
   attached to any job** — measured as one job's detach to the next job's
