@@ -197,6 +197,27 @@ def main():
                 lo = _dt(a["sessions"][i + 1]["logout"])
                 if hi and lo:
                     s["gap"] = max(0, int((hi - lo).total_seconds()))
+            # Order this session's jobs chronologically (by date/time) and
+            # measure the "detached" idle time between each job's detach and
+            # the next job's attach (plus login->first attach and last
+            # detach->logout). This is the time the agent was not attached to
+            # a job -- e.g. detach 06:07:07 PM, reattach 06:17:06 PM.
+            login, logout = _dt(s["login"]), _dt(s["logout"])
+            s["jobs"].sort(key=lambda j: (_dt(j["attach"]) or datetime.min))
+            prev_end = login
+            idle_total = 0
+            for j in s["jobs"]:
+                at, de = _dt(j["attach"]), _dt(j["detach"])
+                j["idle"] = 0
+                if at and prev_end:
+                    j["idle"] = max(0, int((at - prev_end).total_seconds()))
+                    idle_total += j["idle"]
+                prev_end = de or prev_end
+            s["endIdle"] = 0
+            if logout and prev_end:
+                s["endIdle"] = max(0, int((logout - prev_end).total_seconds()))
+            idle_total += s["endIdle"]
+            s["idle"] = idle_total
         out.append(a)
 
     data = {"period": period, "origin": "sip:100@zain.com",

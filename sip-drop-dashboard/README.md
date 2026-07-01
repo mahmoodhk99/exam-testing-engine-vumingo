@@ -41,6 +41,13 @@ Features:
   sessions** line shows the **away time** — from the earlier session's logout
   to the next session's login (e.g. logout 05:20:33 PM → login 05:22:37 PM =
   2 min).
+- Inside each session the jobs are listed **by date/time** (chronological),
+  and a **⏳ detached …** row marks idle time when the agent was **not
+  attached to any job** — measured as one job's detach to the next job's
+  attach (also login → first attach, and last detach → logout). The session
+  header's **Detached** total sums all of it. Example: last job detaches
+  06:07:07 PM and the next attaches 06:17:06 PM ≈ 10 min detached. Idle
+  markers show for gaps ≥ 60 seconds.
 
 ## Data sources
 1. **In Job Break Count** — from `Test_PAS.xls`, the POM Agent Summary

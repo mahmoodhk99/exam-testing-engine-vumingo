@@ -52,6 +52,8 @@
   .metric b{font-size:13px}
   .metric.drop b{color:#7dd3fc}
   .metric.brk b{color:#fcd34d}
+  .metric.idle b{color:#c4b5fd}
+  tr.idlerow td{background:#171326;color:#c4b5fd;font-size:11px;border-bottom:1px solid #1c2637;padding:5px 12px}
   .sesshdr.red .metric{background:#2a0f12;border-color:#7f1d1d}
   .sesshdr.red .metric.drop b{color:#fca5a5}
   .sess{margin:10px 0 4px;font-size:12px;color:var(--muted)}
@@ -115,6 +117,7 @@
 <script>
 const DATA = __DATA__;
 const A = DATA.agents;
+const IDLE_MIN = 60;   // only show a "detached" marker for idle gaps >= 60s
 const min = s => (s/60);
 const fmtMin = s => min(s).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
 function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
@@ -160,12 +163,17 @@ function detailHTML(a){
       +`<span class="win">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)}</span>`
       +`<span class="metric drop">Nailer drops (sip:100): <b>${s.drops}</b></span>`
       +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
+      +`<span class="metric idle">Detached: <b>${fmtGap(s.idle||0)}</b></span>`
       +(sred?`<span class="redbadge">&#9873; abuse: ${s.abuse} drop${s.abuse>1?'s':''} w/o break</span>`:'')
       +`</div>`;
     h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
-    s.jobs.forEach(j=>{
+    s.jobs.forEach((j,ji)=>{
+      if(j.idle>=IDLE_MIN)
+        h+=`<tr class="idlerow"><td colspan="6">&#9203; detached ${fmtGap(j.idle)}${ji===0?' (after login, before first job)':' between jobs'} &mdash; not attached to any job</td></tr>`;
       h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
     });
+    if(s.endIdle>=IDLE_MIN)
+      h+=`<tr class="idlerow"><td colspan="6">&#9203; detached ${fmtGap(s.endIdle)} (after last job, until logout) &mdash; not attached to any job</td></tr>`;
     h+='</tbody></table>';
     // away-gap between this session and the next-earlier one below it
     if(s.gap!=null){
@@ -202,7 +210,7 @@ function render(){
     tb.appendChild(tr);tb.appendChild(det);
   });
   document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
-  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each expanded session shows its <b>Nailer drops</b> vs <b>In Job breaks</b>; the gap is the abuse count. The dashed <b>&#9203; logged out&hellip;</b> line between two sessions is the away time (previous logout &rarr; next login). Durations in minutes. Click a row to expand.';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each expanded session shows its <b>Nailer drops</b> vs <b>In Job breaks</b>; the gap is the abuse count. The dashed <b>&#9203; logged out&hellip;</b> line between two sessions is the away time (previous logout &rarr; next login). Inside a session, jobs are listed <b>by date/time</b> and a <b>&#9203; detached&hellip;</b> row marks idle time when the agent was not attached to any job (job detach &rarr; next job attach); the session\'s <b>Detached</b> total sums it. Durations in minutes. Click a row to expand.';
 }
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
