@@ -3,57 +3,66 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIP Drop Dashboard &mdash; sip:100@zain.com</title>
+<title>SIP Drop Dashboard &mdash; In Job Break vs sip:100@zain.com</title>
 <style>
   :root{--bg:#0f172a;--card:#1e293b;--card2:#273449;--text:#e2e8f0;--muted:#94a3b8;
-        --accent:#38bdf8;--accent2:#f472b6;--bar:#38bdf8;--good:#34d399;--warn:#fbbf24;--border:#334155;}
+        --accent:#38bdf8;--border:#334155;--red:#ef4444;--redbg:#3b1417;--good:#34d399;}
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);}
-  header{padding:22px 26px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,#0b1220,#12203a);}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:22px 26px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,#0b1220,#12203a)}
   h1{margin:0;font-size:20px;font-weight:700}
   .sub{color:var(--muted);font-size:13px;margin-top:6px}
-  .wrap{max-width:1200px;margin:0 auto;padding:22px 26px}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+  .wrap{max-width:1240px;margin:0 auto;padding:22px 26px}
+  .note{background:#1b2a1f;border:1px solid #2e5339;color:#c9f0d4;border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:20px;line-height:1.5}
+  .note b{color:#fff}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
   .card .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
   .card .v{font-size:26px;font-weight:700;margin-top:6px}
-  .card .v.small{font-size:15px;font-weight:600}
+  .card .v.small{font-size:14px;font-weight:600}
+  .card.redcard .v{color:var(--red)}
   .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:22px}
   .panel h2{margin:0 0 14px;font-size:15px;font-weight:600}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-  input[type=search]{background:var(--card2);border:1px solid var(--border);color:var(--text);
-        padding:9px 12px;border-radius:8px;font-size:14px;flex:1;min-width:200px}
+  input[type=search]{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:14px;flex:1;min-width:200px}
   select{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:8px;font-size:13px}
+  label.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border)}
-  th{color:var(--muted);font-weight:600;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--card)}
+  th{color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
   th:hover{color:var(--text)}
   tbody tr:hover{background:var(--card2)}
   td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
-  .barcell{position:relative}
-  .barwrap{background:var(--card2);border-radius:5px;height:22px;position:relative;overflow:hidden;min-width:80px}
-  .bar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#0ea5e9,#38bdf8);border-radius:5px}
-  .barlabel{position:absolute;left:8px;top:0;line-height:22px;font-size:12px;font-weight:600}
-  .rank{color:var(--muted);width:34px}
   .agent{font-weight:600}
   .ext{color:var(--muted);font-size:12px}
-  .detail{background:var(--bg)}
-  .detail table{font-size:12px}
-  .detail td{border-bottom:1px solid #1c2637;color:var(--muted)}
+  .rank{color:var(--muted);width:34px}
   .clickable{cursor:pointer}
   .caret{display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
   tr.open .caret{transform:rotate(90deg)}
-  .foot{color:var(--muted);font-size:12px;margin-top:8px}
+  .match{color:var(--good);font-weight:700}
+  .nomatch{color:var(--muted)}
+  .redbadge{display:inline-block;background:var(--redbg);color:#fca5a5;border:1px solid #7f1d1d;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700}
+  .detail{background:var(--bg)}
+  .sess{margin:10px 0 4px;font-size:12px;color:var(--muted)}
+  .sess b{color:var(--text)}
+  .detail table{font-size:12px;margin-bottom:6px}
+  .detail th{color:var(--muted);cursor:default}
+  .detail td{border-bottom:1px solid #1c2637;color:#cbd5e1}
+  tr.red td{background:var(--redbg)!important;color:#fca5a5}
+  tr.red td .b{color:#fecaca;font-weight:700}
   .pill{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted)}
-  mark{background:var(--warn);color:#111;border-radius:3px}
+  .foot{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.5}
+  .legend{display:inline-block;width:11px;height:11px;border-radius:3px;background:var(--redbg);border:1px solid #7f1d1d;vertical-align:middle;margin-right:4px}
+  mark{background:#fbbf24;color:#111;border-radius:3px}
 </style>
 </head>
 <body>
 <header>
-  <h1>&#128246; SIP Drop Dashboard</h1>
-  <div class="sub">Calls from <b>sip:100@zain.com</b> dropped by the agent (Far End Disconnect) &mdash; grouped per agent</div>
+  <h1>&#128246; SIP Drop Dashboard &mdash; In Job Break vs nailer drops</h1>
+  <div class="sub">Per agent: <b>In Job Break Count</b> (POM Agent Summary) compared with dropped <b>sip:100@zain.com</b> nailer calls</div>
 </header>
 <div class="wrap">
+  <div class="note" id="note"></div>
   <div class="cards" id="cards"></div>
 
   <div class="panel">
@@ -61,25 +70,26 @@
     <div class="toolbar">
       <input type="search" id="q" placeholder="Search agent name or extension&hellip;">
       <select id="sortSel">
-        <option value="drops">Sort: Most drops</option>
-        <option value="dropsAsc">Sort: Fewest drops</option>
+        <option value="ib">Sort: Most In Job Break drops</option>
+        <option value="drops100">Sort: Most sip:100 drops</option>
+        <option value="red">Sort: Most repeat-break jobs</option>
+        <option value="talk">Sort: Most talk time</option>
         <option value="name">Sort: Agent name</option>
-        <option value="avg">Sort: Avg duration</option>
       </select>
+      <label class="chk"><input type="checkbox" id="onlyRed"> Only agents with repeat breaks</label>
       <span class="pill" id="showing"></span>
     </div>
     <table id="tbl">
-      <thead>
-        <tr>
-          <th class="rank">#</th>
-          <th data-k="name">Agent</th>
-          <th class="num" data-k="drops">Drops</th>
-          <th style="width:220px">Share</th>
-          <th class="num" data-k="total">Total talk (s)</th>
-          <th class="num" data-k="avg">Avg (s)</th>
-          <th class="num" data-k="short">&le;5s drops</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th class="rank">#</th>
+        <th data-k="name">Agent</th>
+        <th class="num" data-k="ib">In Job<br>Breaks</th>
+        <th class="num" data-k="drops100">sip:100<br>drops</th>
+        <th data-k="match">Match</th>
+        <th class="num" data-k="jobs">Jobs</th>
+        <th class="num" data-k="talk">Talk (min)</th>
+        <th class="num" data-k="red">Repeat-break<br>jobs</th>
+      </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
     <div class="foot" id="foot"></div>
@@ -88,72 +98,82 @@
 
 <script>
 const DATA = __DATA__;
-const calls = DATA.calls;
+const A = DATA.agents;
+const min = s => (s/60);
+const fmtMin = s => min(s).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
+function hl(s){const q=query.toLowerCase();if(!q)return esc(s);const i=String(s).toLowerCase().indexOf(q);
+  if(i<0)return esc(s);return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length))}
 
-// aggregate per agent
-const map = new Map();
-for(const c of calls){
-  let a = map.get(c.e);
-  if(!a){ a = {ext:c.e, name:c.n, drops:0, total:0, short:0, rows:[]}; map.set(c.e,a); }
-  a.drops++; a.total += c.d; if(c.d<=5) a.short++; a.rows.push(c);
+const totalIB=DATA.totalIB, totalD=DATA.totalDrops100;
+const totalRed=A.reduce((s,a)=>s+a.redjobs,0);
+const matchN=A.filter(a=>a.ib===a.drops100).length;
+document.getElementById('note').innerHTML =
+  'A <b>drop</b> of the <b>sip:100@zain.com</b> nailer call registers in POM as an <b>In Job Break</b> for that job. '+
+  'This report cross-checks the PAS <b>In Job Break Count</b> against the dropped nailer calls from the contact-detail report. '+
+  'Across all agents the totals are <b>'+totalIB.toLocaleString()+'</b> in-job breaks vs <b>'+totalD.toLocaleString()+'</b> sip:100 drops '+
+  '&mdash; they match exactly for '+matchN+' of '+A.length+' agents. '+
+  'Rows highlighted <b style="color:#fca5a5">red</b> are jobs where the nailer dropped <b>more than once</b> within the same job window (Job Attach&ndash;Detach).';
+
+document.getElementById('cards').innerHTML=[
+  ['In Job Break drops', totalIB.toLocaleString(),0],
+  ['sip:100 nailer drops', totalD.toLocaleString(),0],
+  ['Agents', A.length,0],
+  ['Repeat-break jobs (&gt;1)', totalRed,'red'],
+  ['Date period', DATA.period,0,true],
+].map(([k,v,red,small])=>`<div class="card${red?' redcard':''}"><div class="k">${k}</div><div class="v${small?' small':''}">${v}</div></div>`).join('');
+
+const maxIB=Math.max(...A.map(a=>a.ib),1);
+let query='',sortKey='ib',onlyRed=false;
+const sorters={
+  ib:(a,b)=>b.ib-a.ib||b.drops100-a.drops100,
+  drops100:(a,b)=>b.drops100-a.drops100,
+  red:(a,b)=>b.redjobs-a.redjobs||b.ib-a.ib,
+  talk:(a,b)=>b.talk-a.talk,
+  name:(a,b)=>a.name.localeCompare(b.name),
+  match:(a,b)=>(b.ib===b.drops100)-(a.ib===a.drops100),
+};
+function detailHTML(a){
+  let h='';
+  a.sessions.forEach(s=>{
+    const sred=s.ib>1;
+    h+=`<div class="sess">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)} &middot; breaks: <b${sred?' style="color:#fca5a5"':''}>${s.ib}</b></div>`;
+    h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
+    s.jobs.forEach(j=>{
+      const red=j.ib>1;
+      h+=`<tr class="${red?'red':''}"><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num"><span class="${red?'b':''}">${j.ib}</span></td></tr>`;
+    });
+    h+='</tbody></table>';
+  });
+  return h;
 }
-let agents = [...map.values()];
-for(const a of agents){ a.avg = a.drops? a.total/a.drops : 0; a.rows.sort((x,y)=>x.t<y.t?1:-1); }
-const maxDrops = Math.max(...agents.map(a=>a.drops));
-const totalDrops = calls.length;
-const totalShort = agents.reduce((s,a)=>s+a.short,0);
-
-// summary cards
-const topA = [...agents].sort((a,b)=>b.drops-a.drops)[0];
-document.getElementById('cards').innerHTML = [
-  ['Total drops', totalDrops.toLocaleString()],
-  ['Agents involved', agents.length],
-  ['Top agent', topA.name+' &middot; '+topA.drops, true],
-  ['Quick drops (&le;5s)', totalShort.toLocaleString()],
-  ['Date period', DATA.period, true],
-].map(([k,v,small])=>`<div class="card"><div class="k">${k}</div><div class="v${small?' small':''}">${v}</div></div>`).join('');
-
-let sortKey='drops', query='';
-function fmt(n){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
-function esc(s){ return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
-function hl(s){ if(!query) return esc(s); const i=s.toLowerCase().indexOf(query.toLowerCase());
-  if(i<0) return esc(s); return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+query.length))+'</mark>'+esc(s.slice(i+query.length)); }
-
 function render(){
-  let list = agents.filter(a=> !query || a.name.toLowerCase().includes(query.toLowerCase()) || a.ext.includes(query));
-  const sorters = {
-    drops:(a,b)=>b.drops-a.drops||a.name.localeCompare(b.name),
-    dropsAsc:(a,b)=>a.drops-b.drops||a.name.localeCompare(b.name),
-    name:(a,b)=>a.name.localeCompare(b.name),
-    avg:(a,b)=>b.avg-a.avg,
-  };
-  list.sort(sorters[sortKey]||sorters.drops);
-  const tb=document.getElementById('tbody'); tb.innerHTML='';
+  let list=A.filter(a=>(!query||a.name.toLowerCase().includes(query.toLowerCase())||a.ext.includes(query))&&(!onlyRed||a.redjobs>0));
+  list.sort(sorters[sortKey]||sorters.ib);
+  const tb=document.getElementById('tbody');tb.innerHTML='';
   list.forEach((a,i)=>{
-    const tr=document.createElement('tr'); tr.className='clickable';
-    const w=Math.round(a.drops/maxDrops*100);
+    const tr=document.createElement('tr');tr.className='clickable';
+    const isMatch=a.ib===a.drops100;
     tr.innerHTML=`<td class="rank">${i+1}</td>
       <td><span class="caret">&#9656;</span> <span class="agent">${hl(a.name)}</span> <span class="ext">${hl('#'+a.ext)}</span></td>
-      <td class="num"><b>${a.drops}</b></td>
-      <td class="barcell"><div class="barwrap"><div class="bar" style="width:${w}%"></div></div></td>
-      <td class="num">${fmt(a.total)}</td>
-      <td class="num">${a.avg.toFixed(1)}</td>
-      <td class="num">${a.short}</td>`;
-    const det=document.createElement('tr'); det.className='detail'; det.style.display='none';
-    det.innerHTML=`<td></td><td colspan="6"><table><thead><tr><th>Start time</th><th>Destination</th><th class="num">Duration (s)</th><th>End detail</th></tr></thead><tbody>`
-      + a.rows.map(r=>`<tr><td>${esc(r.t)}</td><td>sip:${r.e}@zain.com</td><td class="num">${r.d}</td><td>${esc(r.r)}</td></tr>`).join('')
-      + `</tbody></table></td>`;
-    tr.onclick=()=>{ const open=det.style.display!=='none'; det.style.display=open?'none':''; tr.classList.toggle('open',!open); };
-    tb.appendChild(tr); tb.appendChild(det);
+      <td class="num"><b>${a.ib}</b></td>
+      <td class="num">${a.drops100}</td>
+      <td>${isMatch?'<span class="match">&#10003; equal</span>':'<span class="nomatch">&Delta; '+(a.drops100-a.ib)+'</span>'}</td>
+      <td class="num">${a.jobs}</td>
+      <td class="num">${fmtMin(a.talk)}</td>
+      <td class="num">${a.redjobs?'<span class="redbadge">'+a.redjobs+'</span>':'0'}</td>`;
+    const det=document.createElement('tr');det.className='detail';det.style.display='none';
+    det.innerHTML=`<td></td><td colspan="7">${detailHTML(a)}</td>`;
+    tr.onclick=()=>{const open=det.style.display!=='none';det.style.display=open?'none':'';tr.classList.toggle('open',!open);};
+    tb.appendChild(tr);tb.appendChild(det);
   });
-  document.getElementById('showing').textContent = list.length+' of '+agents.length+' agents';
-  document.getElementById('foot').textContent = 'A drop = a call from '+DATA.origin+' that the agent (far end) disconnected. Click a row to see individual calls.';
+  document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = a job where the nailer (sip:100@zain.com) dropped more than once within the same Job Attach&ndash;Detach window. Durations shown in minutes. Click a row to expand sessions &amp; jobs.';
 }
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
-document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{
-  const k=th.dataset.k; sortKey = (k==='drops')?'drops':k; document.getElementById('sortSel').value = (k==='drops')?'drops':(k==='name'?'name':(k==='avg'?'avg':'drops')); render();
-}));
+document.getElementById('onlyRed').addEventListener('change',e=>{onlyRed=e.target.checked;render();});
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['ib','drops100','red','talk','name'].includes(sortKey)?sortKey:'ib';render();}));
 render();
 </script>
 </body>

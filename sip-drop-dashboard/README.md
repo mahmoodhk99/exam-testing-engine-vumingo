@@ -1,32 +1,49 @@
-# SIP Drop Dashboard — sip:100@zain.com
+# SIP Drop Dashboard — In Job Break vs sip:100@zain.com nailer drops
 
 A self-contained webpage that shows, per agent, how many `sip:100@zain.com`
-calls were **dropped by the agent** (Far End Disconnect).
+nailer calls were dropped, measured two ways and compared side by side.
 
 ## How to use
 Open **`index.html`** in any web browser (no server needed — the data is
 embedded in the file).
 
 Features:
-- Summary cards: total drops, agents involved, top agent, quick (≤5s) drops, date period.
-- Sortable / searchable table of every agent with their drop count, a share
-  bar, total & average talk time, and number of very short (≤5s) drops.
-- Click any agent row to expand the individual dropped calls
-  (start time, destination, duration, end detail).
+- Summary cards: total In Job Break drops, total sip:100 nailer drops,
+  agents, repeat-break jobs, date period.
+- Per-agent table: **In Job Break Count**, **sip:100 drops**, a match
+  indicator, job count, total talk time (in **minutes**), and the number of
+  repeat-break jobs.
+- Sort, search, and a "Only agents with repeat breaks" filter.
+- Click any agent to expand their **sessions** (Login → Logout) and the
+  **jobs** in each session (Job Attach → Job Detach) with per-job call
+  count, talk minutes, and In Job Break Count.
+- **Red rows** = jobs where the nailer dropped **more than once** within the
+  same Job Attach–Detach window.
 
-## What counts as a "drop"
-Every record in the source `contactdetail` report is an **outbound** call
-originating from `sip:100@zain.com` whose **End Type = Far End Disconnect**
-— i.e. the agent (the far/destination end) hung up the call. Each such
-record is counted as one drop against that agent.
+## The two drop measures
+1. **In Job Break Count** (from `Test_PAS.xls`, the POM Agent Summary
+   Report). When the `sip:100@zain.com` nailer call to a nailed agent drops
+   during a job, POM records one "In Job Break" for that job.
+2. **sip:100 nailer drops** (from `contactdetail_1.xlsx`). Count of
+   `sip:100@zain.com` contacts that ended in Far End Disconnect for the agent.
+
+### Note on the totals
+Across all agents these come to **820 in-job breaks** vs **1,718 sip:100
+drops**, and they match exactly for only 35 of 177 agents. So in this data
+the two measures are **not** identical — the contact-detail report counts
+more nailer disconnects than POM logs as in-job breaks (a nailer call that
+ends normally at job detach also shows as Far End Disconnect but is not an
+in-job break). The dashboard shows both numbers and the delta per agent so
+the difference is visible.
 
 ## Data sources
-- **contactdetail_1.xlsx** — Avaya Experience Portal contact detail report.
-  Provides each call: start time, originating (`sip:100@zain.com`),
-  destination agent extension, duration, and end type.
-- **Test_PAS.xls** — POM Agent Summary Report. Maps each agent extension
-  (Agent ID) to the agent's name. All 174 extensions in the call report
-  matched a name.
+- **contactdetail_1.xlsx** — Avaya Experience Portal contact detail report
+  (each sip:100@zain.com nailer call, its destination agent extension,
+  duration and end type).
+- **Test_PAS.xls** — POM Agent Summary Report. Hierarchical:
+  Agent → Session (Login/Logout) → Job (Job Attach/Detach) with Call Count,
+  Talk Duration and In Job Break Count per job. Also maps each extension to
+  the agent name.
 
 ## Rebuilding
 If the source reports change, regenerate the page with:
@@ -36,4 +53,4 @@ pip install openpyxl xlrd
 python build.py contactdetail_1.xlsx Test_PAS.xls
 ```
 
-This rewrites `data.json` and `index.html`.
+This rewrites `data.json` and `index.html` from `template.html`.
