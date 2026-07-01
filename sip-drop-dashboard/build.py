@@ -85,6 +85,27 @@ def _dt(s):
     return None
 
 
+def _merge_seconds(intervals):
+    """Total length of the union of (start, end) datetime intervals.
+
+    Overlapping intervals are merged, so parallel/successive drops that all
+    precede one re-attach count as a single span (first drop -> next job)
+    instead of being summed.
+    """
+    total = 0
+    cur = None
+    for st, en in sorted(intervals):
+        if cur and st <= cur[1]:
+            cur = (cur[0], max(cur[1], en))
+        else:
+            if cur:
+                total += (cur[1] - cur[0]).total_seconds()
+            cur = (st, en)
+    if cur:
+        total += (cur[1] - cur[0]).total_seconds()
+    return int(total)
+
+
 def load_nailer_drops(detail_path):
     """sip:100@zain.com Far-End-Disconnect drops per agent extension.
 
@@ -233,42 +254,27 @@ def main():
             s["dropLead"] = (max(0, int((logout - lde).total_seconds()))
                              if logout and lde and lde <= logout else None)
             # one note per nailer drop: its date/time and the off time after
-            # it -- from the drop until the next job attach, but CLAMPED to the
-            # session logout (time logged out between sessions is not counted).
+            # it -- from the drop until the next job the agent attached to
+            # (including any logged-out time in between: that is abuse too).
             notes = []
             intervals = []
             for de in ends:
                 idx = bisect.bisect_right(attaches, de)
                 nxt = attaches[idx] if idx < len(attaches) else None
-                on_shift = bool(nxt and logout and nxt <= logout)
-                end = nxt if on_shift else logout
-                idle = int((end - de).total_seconds()) if end and end > de \
-                    else 0
                 notes.append({
                     "t": de.strftime("%m/%d/%Y %I:%M:%S %p"),
-                    "idle": idle,           # off time (capped at logout)
-                    "off": not on_shift,    # agent logged off before next job
+                    "off": int((nxt - de).total_seconds()) if nxt else None,
+                    # did the agent log out before attaching to the next job?
+                    "loggedOff": bool(nxt and logout and nxt > logout),
                 })
-                if end and end > de:
-                    intervals.append((de, end))
+                # only abuse drops (in sessions with a drop w/o break) feed the
+                # abuse-time total; merged later so parallel drops don't double
+                # count (first drop -> next job attach is one span).
+                if nxt and s["abuse"] > 0:
+                    intervals.append((de, nxt))
             s["dropNotes"] = notes
-            # session abuse time = MERGED (non-overlapping) idle-after-drop
-            # time, so multiple drops before one re-attach are not double
-            # counted; only for sessions that actually have an abuse drop.
-            total = 0
-            if s["abuse"] > 0:
-                intervals.sort()
-                cur = None
-                for st, en in intervals:
-                    if cur and st <= cur[1]:
-                        cur = (cur[0], max(cur[1], en))
-                    else:
-                        if cur:
-                            total += (cur[1] - cur[0]).total_seconds()
-                        cur = (st, en)
-                if cur:
-                    total += (cur[1] - cur[0]).total_seconds()
-            s["abuseTime"] = int(total)
+            s["_intervals"] = intervals
+            s["abuseTime"] = _merge_seconds(intervals)
             # Strongest gap-abuse signal: an abuse drop (nailer hung up with no
             # In Job Break) in a session that is then followed by an unlogged
             # off-gap before the next login -- i.e. the agent dropped the
@@ -279,7 +285,10 @@ def main():
             s["jobs"].sort(key=lambda j: (_dt(j["attach"]) or datetime.min))
         a["dropLogoffSessions"] = sum(1 for s in a["sessions"]
                                       if s["dropLogoff"])
-        a["abuseTime"] = sum(s["abuseTime"] for s in a["sessions"])
+        # agent abuse time: merge every abuse-drop interval across the whole
+        # day so overlaps between/within sessions are never double counted.
+        a["abuseTime"] = _merge_seconds(
+            [iv for s in a["sessions"] for iv in s.pop("_intervals", [])])
         out.append(a)
 
     data = {"period": period, "origin": "sip:100@zain.com",

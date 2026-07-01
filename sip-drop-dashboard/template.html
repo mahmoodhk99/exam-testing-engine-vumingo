@@ -184,8 +184,10 @@ function detailHTML(a){
       +`</div>`;
     h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
     (s.dropNotes||[]).forEach(n=>{
-      const tail = n.off ? 'then logged off' : 'until next job attach';
-      h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)} &nbsp;&middot;&nbsp; off <b>${fmtGap(n.idle)}</b> ${tail}</td></tr>`;
+      const txt = n.off==null
+        ? 'no job attached afterwards'
+        : 'off <b>'+fmtGap(n.off)+'</b> '+(n.loggedOff?'(logged off, then next job)':'until next job attach');
+      h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)} &nbsp;&middot;&nbsp; <b>Abuse time:</b> ${txt}</td></tr>`;
     });
     s.jobs.forEach(j=>{
       h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;

@@ -50,14 +50,15 @@ Features:
   abuse drop (no break) that is then followed by an off-gap before the next
   login. The summary card **Dropped w/o break → then off** counts these.
 - For every nailer drop a red **🔴 Nailer dropped** row shows the **date/time
-  of the dropped call** and how long the agent was **off a job after it** —
-  measured from the drop to the next job attach, **capped at that session's
-  logout** (time spent logged out is not counted), and marked "then logged
-  off" when the agent logged out before attaching to another job.
-- **Abuse time** (per session and per agent) is the **merged** off-a-job
-  time following abuse drops, so overlapping drops (several drops before one
-  re-attach) are not double counted and logged-out time is excluded. As a
-  result an agent's abuse time can never exceed the time they were logged in.
+  of the dropped call** and its **abuse time** = time from the drop until the
+  **next job the agent attached to** (including any time logged out in
+  between — that off-work time is abuse too). It is marked "(logged off, then
+  next job)" when the agent logged out before attaching again.
+- **Abuse time** (per session and per agent) is the **merged** (union) of
+  those drop→next-job spans, so **parallel/successive drops before one
+  re-attach are counted once** (first drop → next job attach), not summed.
+  This removes the double-counting; an agent's abuse time stays within their
+  day span.
 - Inside each session the jobs are listed **by date/time** (chronological),
   and a **⏳ detached …** row marks idle time when the agent was **not
   attached to any job** — measured as one job's detach to the next job's
