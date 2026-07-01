@@ -95,6 +95,7 @@
       <input type="search" id="q" placeholder="Search agent name or extension&hellip;">
       <select id="sortSel">
         <option value="abuse">Sort: Most abuse (drops w/o break)</option>
+        <option value="abuseTime">Sort: Most abuse time</option>
         <option value="drops100">Sort: Most sip:100 drops</option>
         <option value="ib">Sort: Most In Job Break drops</option>
         <option value="talk">Sort: Most talk time</option>
@@ -108,7 +109,8 @@
         <th class="rank">#</th>
         <th data-k="name">Agent</th>
         <th class="num" data-k="abuse">Abuse drops<br>(no break)</th>
-        <th class="num" data-k="abuse">Abuse<br>sessions</th>
+        <th class="num" data-k="abuseSessions">Abuse<br>sessions</th>
+        <th class="num" data-k="abuseTime">Abuse time</th>
         <th class="num" data-k="drops100">sip:100<br>drops</th>
         <th class="num" data-k="ib">In Job<br>Breaks</th>
         <th class="num" data-k="jobs">Jobs</th>
@@ -147,7 +149,6 @@ document.getElementById('note').innerHTML =
   'An <b style="color:#fcd34d">&#9888; amber</b> flag marks a session where the agent dropped the nailer <b>without a break</b> and then went <b>off before the next login</b> &mdash; i.e. dropped the call to take an unlogged gap.';
 
 document.getElementById('cards').innerHTML=[
-  ['Total abuse time', fmtGap(totalAbuseTime),'red'],
   ['Abusive drops (no break)', totalAbuse.toLocaleString(),'red'],
   ['Agents flagged', abuseAgents+' / '+A.length,'red'],
   ['Sessions with abuse', totalAbuseSess.toLocaleString(),'red'],
@@ -161,6 +162,8 @@ const maxIB=Math.max(...A.map(a=>a.ib),1);
 let query='',sortKey='abuse',onlyRed=false;
 const sorters={
   abuse:(a,b)=>b.abuse-a.abuse||b.drops100-a.drops100,
+  abuseTime:(a,b)=>b.abuseTime-a.abuseTime||b.abuse-a.abuse,
+  abuseSessions:(a,b)=>b.abuseSessions-a.abuseSessions||b.abuse-a.abuse,
   ib:(a,b)=>b.ib-a.ib||b.drops100-a.drops100,
   drops100:(a,b)=>b.drops100-a.drops100,
   talk:(a,b)=>b.talk-a.talk,
@@ -214,12 +217,13 @@ function render(){
       <td><span class="caret">&#9656;</span> <span class="agent">${hl(a.name)}</span> <span class="ext">${hl('#'+a.ext)}</span></td>
       <td class="num">${a.abuse>0?'<span class="redbadge">'+a.abuse+'</span>':'0'}</td>
       <td class="num">${a.abuseSessions||0}</td>
+      <td class="num">${a.abuseTime?'<b style="color:#fca5a5">'+fmtGap(a.abuseTime)+'</b>':'0'}</td>
       <td class="num">${a.drops100}</td>
       <td class="num">${a.ib}</td>
       <td class="num">${a.jobs}</td>
       <td class="num">${fmtMin(a.talk)}</td>`;
     const det=document.createElement('tr');det.className='detail';det.style.display='none';
-    det.innerHTML=`<td></td><td colspan="7">${detailHTML(a)}</td>`;
+    det.innerHTML=`<td></td><td colspan="8">${detailHTML(a)}</td>`;
     tr.onclick=()=>{const open=det.style.display!=='none';det.style.display=open?'none':'';tr.classList.toggle('open',!open);};
     tb.appendChild(tr);tb.appendChild(det);
   });
@@ -229,7 +233,7 @@ function render(){
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
 document.getElementById('onlyRed').addEventListener('change',e=>{onlyRed=e.target.checked;render();});
-document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','drops100','ib','talk','name'].includes(sortKey)?sortKey:'abuse';render();}));
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','abuseTime','drops100','ib','talk','name'].includes(sortKey)?sortKey:'abuse';render();}));
 render();
 </script>
 </body>

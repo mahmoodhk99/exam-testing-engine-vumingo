@@ -26,12 +26,13 @@ Open **`index.html`** in any web browser (no server needed — the data is
 embedded in the file).
 
 Features:
-- Summary cards: **total abuse time** (sum of all abuse times), abusive
-  drops, agents flagged, sessions with abuse, dropped-w/o-break-then-off,
-  total sip:100 nailer drops, total In Job Break drops, date period.
-- Per-agent table: **abuse drops (no break)**, **abuse sessions**,
-  **sip:100 drops**, **In Job Breaks**, job count and total talk time (in
-  **minutes**). Sort, search, and an "Only flagged agents" filter.
+- Summary cards: abusive drops, agents flagged, sessions with abuse,
+  dropped-w/o-break-then-off, total sip:100 nailer drops, total In Job Break
+  drops, date period.
+- Per-agent table: **abuse drops (no break)**, **abuse sessions**, **abuse
+  time** (that agent's total time off a job caused by abuse drops), **sip:100
+  drops**, **In Job Breaks**, job count and total talk time (in **minutes**).
+  Sort (incl. by abuse time), search, and an "Only flagged agents" filter.
 - Agent rows with any abuse are tinted red.
 - Click any agent to expand their **sessions** (Login → Logout). Each session
   header shows its **nailer drops** vs **In Job breaks**; when drops exceed
