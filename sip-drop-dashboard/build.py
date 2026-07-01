@@ -232,24 +232,43 @@ def main():
             s["lastDrop"] = lde.strftime("%I:%M:%S %p") if lde else None
             s["dropLead"] = (max(0, int((logout - lde).total_seconds()))
                              if logout and lde and lde <= logout else None)
-            # one note per nailer drop: its date/time and the abuse time =
-            # time from the drop until the next job attach the agent took.
+            # one note per nailer drop: its date/time and the off time after
+            # it -- from the drop until the next job attach, but CLAMPED to the
+            # session logout (time logged out between sessions is not counted).
             notes = []
+            intervals = []
             for de in ends:
                 idx = bisect.bisect_right(attaches, de)
                 nxt = attaches[idx] if idx < len(attaches) else None
+                on_shift = bool(nxt and logout and nxt <= logout)
+                end = nxt if on_shift else logout
+                idle = int((end - de).total_seconds()) if end and end > de \
+                    else 0
                 notes.append({
                     "t": de.strftime("%m/%d/%Y %I:%M:%S %p"),
-                    "abuse": int((nxt - de).total_seconds()) if nxt else None,
-                    "next": nxt.strftime("%m/%d/%Y %I:%M:%S %p") if nxt
-                            else None,
+                    "idle": idle,           # off time (capped at logout)
+                    "off": not on_shift,    # agent logged off before next job
                 })
+                if end and end > de:
+                    intervals.append((de, end))
             s["dropNotes"] = notes
-            # session abuse time: total off-a-job time caused by the abuse
-            # drops (the `abuse` longest drop->next-job gaps in the session).
-            drop_times = sorted((n["abuse"] for n in notes
-                                 if n["abuse"] is not None), reverse=True)
-            s["abuseTime"] = sum(drop_times[:s["abuse"]]) if s["abuse"] else 0
+            # session abuse time = MERGED (non-overlapping) idle-after-drop
+            # time, so multiple drops before one re-attach are not double
+            # counted; only for sessions that actually have an abuse drop.
+            total = 0
+            if s["abuse"] > 0:
+                intervals.sort()
+                cur = None
+                for st, en in intervals:
+                    if cur and st <= cur[1]:
+                        cur = (cur[0], max(cur[1], en))
+                    else:
+                        if cur:
+                            total += (cur[1] - cur[0]).total_seconds()
+                        cur = (st, en)
+                if cur:
+                    total += (cur[1] - cur[0]).total_seconds()
+            s["abuseTime"] = int(total)
             # Strongest gap-abuse signal: an abuse drop (nailer hung up with no
             # In Job Break) in a session that is then followed by an unlogged
             # off-gap before the next login -- i.e. the agent dropped the
