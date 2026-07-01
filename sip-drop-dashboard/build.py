@@ -30,7 +30,8 @@ import json
 import os
 import re
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
+from datetime import datetime
 
 import openpyxl
 import xlrd
@@ -67,21 +68,44 @@ def _int(s):
         return 0
 
 
+def _dt(s):
+    """Parse a report timestamp; returns a datetime or None."""
+    s = str(s).strip()
+    for fmt in ("%m/%d/%y %I:%M:%S %p", "%m/%d/%Y %I:%M:%S %p"):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            pass
+    return None
+
+
 def load_nailer_drops(detail_path):
-    """sip:100@zain.com Far-End-Disconnect drops per agent extension."""
+    """sip:100@zain.com Far-End-Disconnect drops per agent extension.
+
+    Returns (counts, drop_times, period) where drop_times maps an agent
+    extension to the sorted list of drop timestamps (used to attribute
+    each drop to a login session).
+    """
     wb = openpyxl.load_workbook(detail_path, read_only=True, data_only=True)
     ws = wb["Details"]
     rows = list(ws.iter_rows(values_only=True))
     hdr = [str(h).strip() for h in rows[0]]
     dest = hdr.index("Destination #")
-    drops = Counter(re.sub(r"sip:(\d+)@.*", r"\1", str(r[dest]))
-                    for r in rows[1:])
+    start = hdr.index("Start Time")
+    drops = Counter()
+    times = defaultdict(list)
+    for r in rows[1:]:
+        ext = re.sub(r"sip:(\d+)@.*", r"\1", str(r[dest]))
+        drops[ext] += 1
+        times[ext].append(_dt(r[start]))
+    for ext in times:
+        times[ext].sort(key=lambda d: (d is None, d))
     period = ""
     if "Summary" in wb.sheetnames:
         srows = list(wb["Summary"].iter_rows(values_only=True))
         if srows and len(srows[0]) > 1:
             period = str(srows[0][1])
-    return drops, period
+    return drops, times, period
 
 
 def load_pas(pas_path):
@@ -136,14 +160,28 @@ def main():
     else:
         detail_path, pas_path = "contactdetail_1.xlsx", "Test_PAS.xls"
 
-    drops, period = load_nailer_drops(detail_path)
+    drops, drop_times, period = load_nailer_drops(detail_path)
     agents = load_pas(pas_path)
 
     out = []
     for ext, a in agents.items():
         a["sessions"] = [s for s in a["sessions"] if s["jobs"]]
+        # attribute each sip:100 nailer drop to the login session whose
+        # Login-Logout window contains the drop time (each drop to at most
+        # one session, so session drop counts sum to the agent total).
+        remaining = [d for d in drop_times.get(ext, []) if d is not None]
+        for s in a["sessions"]:
+            lo, hi = _dt(s["login"]), _dt(s["logout"])
+            if lo and hi:
+                inside = [d for d in remaining if lo <= d <= hi]
+                s["drops"] = len(inside)
+                remaining = [d for d in remaining if not (lo <= d <= hi)]
+            else:
+                s["drops"] = 0
         a["redjobs"] = sum(1 for s in a["sessions"]
                            for j in s["jobs"] if j["ib"] > 1)
+        # sessions where the nailer dropped more than once
+        a["redsessions"] = sum(1 for s in a["sessions"] if s["drops"] > 1)
         a["drops100"] = drops.get(ext, 0)
         out.append(a)
 

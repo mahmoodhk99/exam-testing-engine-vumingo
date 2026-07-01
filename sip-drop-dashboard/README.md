@@ -12,13 +12,17 @@ Features:
   agents, repeat-break jobs, date period.
 - Per-agent table: **In Job Break Count**, **sip:100 drops**, a match
   indicator, job count, total talk time (in **minutes**), and the number of
-  repeat-break jobs.
-- Sort, search, and a "Only agents with repeat breaks" filter.
-- Click any agent to expand their **sessions** (Login → Logout) and the
-  **jobs** in each session (Job Attach → Job Detach) with per-job call
-  count, talk minutes, and In Job Break Count.
-- **Red rows** = jobs where the nailer dropped **more than once** within the
-  same Job Attach–Detach window.
+  repeat-drop sessions.
+- Sort, search, and a "Only agents with repeat-drop sessions" filter.
+- Click any agent to expand their **sessions** (Login → Logout). Each session
+  header shows, for that session, how many **nailer calls dropped**
+  (sip:100 drops attributed to the session by call time) and its
+  **In Job break count**, followed by the **jobs** in the session
+  (Job Attach → Job Detach) with per-job call count, talk minutes and break
+  count.
+- **Red sessions** = login sessions where the nailer dropped **more than
+  once**. Individual **job rows** are also red when that job's break count
+  is greater than 1.
 
 ## The two drop measures
 1. **In Job Break Count** (from `Test_PAS.xls`, the POM Agent Summary

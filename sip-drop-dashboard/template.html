@@ -43,6 +43,17 @@
   .nomatch{color:var(--muted)}
   .redbadge{display:inline-block;background:var(--redbg);color:#fca5a5;border:1px solid #7f1d1d;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700}
   .detail{background:var(--bg)}
+  .sesshdr{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0 4px;padding:8px 12px;
+        background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;font-size:12px;color:var(--muted)}
+  .sesshdr.red{background:var(--redbg);border-color:#7f1d1d;border-left-color:var(--red)}
+  .sesshdr b{color:var(--text)}
+  .sesshdr .win{flex:1;min-width:180px}
+  .metric{display:inline-block;background:#0f1b2e;border:1px solid var(--border);border-radius:999px;padding:2px 11px;font-size:12px}
+  .metric b{font-size:13px}
+  .metric.drop b{color:#7dd3fc}
+  .metric.brk b{color:#fcd34d}
+  .sesshdr.red .metric{background:#2a0f12;border-color:#7f1d1d}
+  .sesshdr.red .metric.drop b{color:#fca5a5}
   .sess{margin:10px 0 4px;font-size:12px;color:var(--muted)}
   .sess b{color:var(--text)}
   .detail table{font-size:12px;margin-bottom:6px}
@@ -72,11 +83,11 @@
       <select id="sortSel">
         <option value="ib">Sort: Most In Job Break drops</option>
         <option value="drops100">Sort: Most sip:100 drops</option>
-        <option value="red">Sort: Most repeat-break jobs</option>
+        <option value="red">Sort: Most repeat-drop sessions</option>
         <option value="talk">Sort: Most talk time</option>
         <option value="name">Sort: Agent name</option>
       </select>
-      <label class="chk"><input type="checkbox" id="onlyRed"> Only agents with repeat breaks</label>
+      <label class="chk"><input type="checkbox" id="onlyRed"> Only agents with repeat-drop sessions</label>
       <span class="pill" id="showing"></span>
     </div>
     <table id="tbl">
@@ -88,7 +99,7 @@
         <th data-k="match">Match</th>
         <th class="num" data-k="jobs">Jobs</th>
         <th class="num" data-k="talk">Talk (min)</th>
-        <th class="num" data-k="red">Repeat-break<br>jobs</th>
+        <th class="num" data-k="red">Repeat-drop<br>sessions</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -106,20 +117,23 @@ function hl(s){const q=query.toLowerCase();if(!q)return esc(s);const i=String(s)
   if(i<0)return esc(s);return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length))}
 
 const totalIB=DATA.totalIB, totalD=DATA.totalDrops100;
-const totalRed=A.reduce((s,a)=>s+a.redjobs,0);
+const totalRedSess=A.reduce((s,a)=>s+a.redsessions,0);
+const totalSess=A.reduce((s,a)=>s+a.sessions.length,0);
 const matchN=A.filter(a=>a.ib===a.drops100).length;
 document.getElementById('note').innerHTML =
-  'A <b>drop</b> of the <b>sip:100@zain.com</b> nailer call registers in POM as an <b>In Job Break</b> for that job. '+
-  'This report cross-checks the PAS <b>In Job Break Count</b> against the dropped nailer calls from the contact-detail report. '+
-  'Across all agents the totals are <b>'+totalIB.toLocaleString()+'</b> in-job breaks vs <b>'+totalD.toLocaleString()+'</b> sip:100 drops '+
+  'Every dropped <b>sip:100@zain.com</b> nailer call is attributed to the agent login <b>session</b> whose Login&ndash;Logout window contains it. '+
+  'Expand any agent to see, <b>per session</b>, how many <b>nailer calls dropped</b> and the <b>In Job break count</b>. '+
+  'A drop registers in POM as an In Job Break, so this also cross-checks the PAS <b>In Job Break Count</b> against the contact-detail drops: '+
+  'across all agents the totals are <b>'+totalIB.toLocaleString()+'</b> in-job breaks vs <b>'+totalD.toLocaleString()+'</b> sip:100 drops '+
   '&mdash; they match exactly for '+matchN+' of '+A.length+' agents. '+
-  'Rows highlighted <b style="color:#fca5a5">red</b> are jobs where the nailer dropped <b>more than once</b> within the same job window (Job Attach&ndash;Detach).';
+  'Sessions highlighted <b style="color:#fca5a5">red</b> are where the nailer dropped <b>more than once</b> in the same session.';
 
 document.getElementById('cards').innerHTML=[
-  ['In Job Break drops', totalIB.toLocaleString(),0],
   ['sip:100 nailer drops', totalD.toLocaleString(),0],
+  ['In Job Break drops', totalIB.toLocaleString(),0],
   ['Agents', A.length,0],
-  ['Repeat-break jobs (&gt;1)', totalRed,'red'],
+  ['Login sessions', totalSess.toLocaleString(),0],
+  ['Repeat-drop sessions (&gt;1)', totalRedSess,'red'],
   ['Date period', DATA.period,0,true],
 ].map(([k,v,red,small])=>`<div class="card${red?' redcard':''}"><div class="k">${k}</div><div class="v${small?' small':''}">${v}</div></div>`).join('');
 
@@ -128,7 +142,7 @@ let query='',sortKey='ib',onlyRed=false;
 const sorters={
   ib:(a,b)=>b.ib-a.ib||b.drops100-a.drops100,
   drops100:(a,b)=>b.drops100-a.drops100,
-  red:(a,b)=>b.redjobs-a.redjobs||b.ib-a.ib,
+  red:(a,b)=>b.redsessions-a.redsessions||b.drops100-a.drops100,
   talk:(a,b)=>b.talk-a.talk,
   name:(a,b)=>a.name.localeCompare(b.name),
   match:(a,b)=>(b.ib===b.drops100)-(a.ib===a.drops100),
@@ -136,8 +150,13 @@ const sorters={
 function detailHTML(a){
   let h='';
   a.sessions.forEach(s=>{
-    const sred=s.ib>1;
-    h+=`<div class="sess">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)} &middot; breaks: <b${sred?' style="color:#fca5a5"':''}>${s.ib}</b></div>`;
+    const sred=s.drops>1;                 // nailer dropped more than once in this session
+    h+=`<div class="sesshdr${sred?' red':''}">`
+      +`<span class="win">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)}</span>`
+      +`<span class="metric drop">Nailer drops (sip:100): <b>${s.drops}</b></span>`
+      +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
+      +(sred?`<span class="redbadge">dropped ${s.drops}&times;</span>`:'')
+      +`</div>`;
     h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
     s.jobs.forEach(j=>{
       const red=j.ib>1;
@@ -148,7 +167,7 @@ function detailHTML(a){
   return h;
 }
 function render(){
-  let list=A.filter(a=>(!query||a.name.toLowerCase().includes(query.toLowerCase())||a.ext.includes(query))&&(!onlyRed||a.redjobs>0));
+  let list=A.filter(a=>(!query||a.name.toLowerCase().includes(query.toLowerCase())||a.ext.includes(query))&&(!onlyRed||a.redsessions>0));
   list.sort(sorters[sortKey]||sorters.ib);
   const tb=document.getElementById('tbody');tb.innerHTML='';
   list.forEach((a,i)=>{
@@ -161,14 +180,14 @@ function render(){
       <td>${isMatch?'<span class="match">&#10003; equal</span>':'<span class="nomatch">&Delta; '+(a.drops100-a.ib)+'</span>'}</td>
       <td class="num">${a.jobs}</td>
       <td class="num">${fmtMin(a.talk)}</td>
-      <td class="num">${a.redjobs?'<span class="redbadge">'+a.redjobs+'</span>':'0'}</td>`;
+      <td class="num">${a.redsessions?'<span class="redbadge">'+a.redsessions+'</span>':'0'}</td>`;
     const det=document.createElement('tr');det.className='detail';det.style.display='none';
     det.innerHTML=`<td></td><td colspan="7">${detailHTML(a)}</td>`;
     tr.onclick=()=>{const open=det.style.display!=='none';det.style.display=open?'none':'';tr.classList.toggle('open',!open);};
     tb.appendChild(tr);tb.appendChild(det);
   });
   document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
-  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = a job where the nailer (sip:100@zain.com) dropped more than once within the same Job Attach&ndash;Detach window. Durations shown in minutes. Click a row to expand sessions &amp; jobs.';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = a login session where the sip:100@zain.com nailer dropped more than once. Each expanded session shows its <b>Nailer drops</b> (sip:100 calls dropped in that Login&ndash;Logout window) and its <b>In Job breaks</b>; individual jobs are red when their break count &gt; 1. Durations in minutes. Click a row to expand.';
 }
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
