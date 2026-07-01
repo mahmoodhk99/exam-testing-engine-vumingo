@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nailer Drop Abuse Dashboard &mdash; sip:100@zain.com</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--card2:#273449;--text:#e2e8f0;--muted:#94a3b8;
+        --accent:#38bdf8;--border:#334155;--red:#ef4444;--redbg:#3b1417;--good:#34d399;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+  header{padding:26px 32px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,#0b1220,#12203a)}
+  h1{margin:0;font-size:25px;font-weight:700}
+  .sub{color:var(--muted);font-size:15px;margin-top:7px}
+  .wrap{max-width:1560px;margin:0 auto;padding:26px 32px}
+  .note{background:#1b2a1f;border:1px solid #2e5339;color:#c9f0d4;border-radius:10px;padding:15px 20px;font-size:14.5px;margin-bottom:22px;line-height:1.6}
+  .helpBtn{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 15px;border-radius:8px;font-size:14px;cursor:pointer;margin-bottom:16px;font-weight:600}
+  .helpBtn:hover{border-color:var(--accent)}
+  .help{background:#0e1a2b;border:1px solid var(--border);border-radius:12px;padding:6px 24px 18px;margin-bottom:22px;font-size:14px;line-height:1.65;display:none}
+  .help.open{display:block}
+  .help h3{margin:18px 0 6px;font-size:15px;color:#fff}
+  .help ul{margin:6px 0;padding-left:22px}
+  .help li{margin:3px 0}
+  .help code{background:#1e293b;padding:1px 6px;border-radius:5px;font-size:13px}
+  .help .tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700}
+  .help .r{background:var(--redbg);color:#fca5a5;border:1px solid #7f1d1d}
+  .help .a{background:#3a2a08;color:#fcd34d;border:1px solid #92670a}
+  .note b{color:#fff}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+  .card .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .card .v{font-size:30px;font-weight:700;margin-top:6px}
+  .card .v.small{font-size:15px;font-weight:600}
+  .card.redcard .v{color:var(--red)}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:22px}
+  .panel h2{margin:0 0 14px;font-size:15px;font-weight:600}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  input[type=search]{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:14px;flex:1;min-width:200px}
+  select{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:8px;font-size:13px}
+  label.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:11px 15px;text-align:left;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+  th:hover{color:var(--text)}
+  tbody tr:hover{background:var(--card2)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .agent{font-weight:600}
+  .ext{color:var(--muted);font-size:12px}
+  .rank{color:var(--muted);width:34px}
+  .clickable{cursor:pointer}
+  .caret{display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+  tr.open .caret{transform:rotate(90deg)}
+  .match{color:var(--good);font-weight:700}
+  .nomatch{color:var(--muted)}
+  .redbadge{display:inline-block;background:var(--redbg);color:#fca5a5;border:1px solid #7f1d1d;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700}
+  .detail{background:var(--bg)}
+  .sesshdr{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:18px 0 6px;padding:12px 16px;
+        background:var(--card2);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;font-size:13.5px;color:var(--muted)}
+  .sesshdr.red{background:var(--redbg);border-color:#7f1d1d;border-left-color:var(--red)}
+  .sesshdr b{color:var(--text)}
+  .sesshdr .win{flex:1;min-width:180px}
+  .metric{display:inline-block;background:#0f1b2e;border:1px solid var(--border);border-radius:999px;padding:4px 13px;font-size:13px}
+  .metric b{font-size:14px}
+  .metric.drop b{color:#7dd3fc}
+  .metric.brk b{color:#fcd34d}
+  .metric.idle b{color:#c4b5fd}
+  .metric.gap2 b{color:#93c5fd}
+  .metric.last b{color:#fca5a5}
+  .amberbadge{display:inline-block;background:#3a2a08;color:#fcd34d;border:1px solid #92670a;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700}
+  .sesshdr.red .metric.gap2 b{color:#fca5a5}
+  tr.idlerow td{background:#171326;color:#c4b5fd;font-size:12.5px;border-bottom:1px solid #1c2637;padding:7px 15px}
+  .sesshdr.red .metric{background:#2a0f12;border-color:#7f1d1d}
+  .sesshdr.red .metric.drop b{color:#fca5a5}
+  .sess{margin:10px 0 4px;font-size:12px;color:var(--muted)}
+  .sess b{color:var(--text)}
+  .gap{display:flex;align-items:center;gap:10px;margin:2px 0 6px}
+  .gapline{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+  .gappill{font-size:11px;color:#cbd5e1;background:#0f1b2e;border:1px dashed #3d5170;border-radius:999px;padding:2px 10px;white-space:nowrap}
+  .dropnote td{background:#2a0f12;color:#fecaca;font-size:13.5px;border-bottom:1px solid #7f1d1d;padding:9px 15px}
+  .dropnote b{color:#fff}
+  .detail table{font-size:13.5px;margin-bottom:6px}
+  .detail th{color:var(--muted);cursor:default}
+  .detail td{border-bottom:1px solid #1c2637;color:#cbd5e1}
+  tr.redrow td{background:rgba(239,68,68,.07)}
+  tr.redrow:hover td{background:rgba(239,68,68,.14)}
+  tr.red td{background:var(--redbg)!important;color:#fca5a5}
+  tr.red td .b{color:#fecaca;font-weight:700}
+  .pill{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted)}
+  .foot{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.5}
+  .legend{display:inline-block;width:11px;height:11px;border-radius:3px;background:var(--redbg);border:1px solid #7f1d1d;vertical-align:middle;margin-right:4px}
+  mark{background:#fbbf24;color:#111;border-radius:3px}
+
+  .uploader{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:22px}
+  .uploader h3{margin:0 0 12px;font-size:16px}
+  .urow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0;font-size:14px;color:var(--muted)}
+  .urow span{min-width:250px}
+  .urow input[type=file]{color:var(--text);font-size:13px}
+  .goBtn{margin-top:12px;background:#0ea5e9;border:none;color:#04121f;font-weight:700;padding:10px 22px;border-radius:8px;font-size:14px;cursor:pointer}
+  .goBtn:disabled{background:#334155;color:#64748b;cursor:not-allowed}
+  .ustatus{margin-left:14px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>&#128246; Nailer Drop Abuse Dashboard &mdash; sip:100@zain.com</h1>
+  <div class="sub">Flags agents who drop the nailer from the softphone: a <b>sip:100 drop with no matching In Job Break</b> = abuse</div>
+</header>
+<div class="wrap">
+  <button class="helpBtn" id="helpBtn">&#128214; How to read this dashboard</button>
+  <div class="help" id="help">
+    <h3>What this dashboard finds</h3>
+    Agents who hang up the <code>sip:100@zain.com</code> <b>nailer</b> call from their softphone to dodge taking calls.
+    When a nailer drop is legitimate, POM logs an <b>In Job Break</b>. A nailer drop with <b>no matching In Job Break = abuse</b>.
+
+    <h3>Words to know</h3>
+    <ul>
+      <li><b>Nailer call (sip:100@zain.com)</b> &mdash; the always-on call that keeps an agent connected to the dialer; customer calls bridge into it.</li>
+      <li><b>In Job Break</b> &mdash; POM&rsquo;s record of a <i>legitimate</i> nailer drop while working a job.</li>
+      <li><b>Session</b> &mdash; one agent login (Login &rarr; Logout).</li>
+      <li><b>Job</b> &mdash; a campaign the agent attached to (Job Attach &rarr; Job Detach).</li>
+    </ul>
+
+    <h3>Top cards</h3>
+    <ul>
+      <li><b>Abusive drops (no break)</b> &mdash; total nailer drops with no matching break.</li>
+      <li><b>Agents flagged / Sessions with abuse</b> &mdash; how widespread it is.</li>
+      <li><b>Dropped w/o break &rarr; then off</b> &mdash; sessions where an abuse drop was followed by going off before the next login.</li>
+      <li><b>sip:100 nailer drops / In Job Break drops</b> &mdash; raw totals for reference.</li>
+    </ul>
+
+    <h3>The agent table</h3>
+    <ul>
+      <li><b>Abuse drops (no break)</b> = nailer drops &minus; in-job breaks (per agent).</li>
+      <li><b>Abuse sessions</b> = how many of the agent&rsquo;s sessions had any abuse.</li>
+      <li><b>Abuse time</b> = total off-work time caused by abuse drops (from each drop to the next job they attached to; overlapping/parallel drops counted once).</li>
+      <li><b>sip:100 drops / In Job Breaks / Jobs / Talk (min)</b> &mdash; supporting numbers.</li>
+      <li>Use the <b>search</b>, the <b>sort</b> menu (or click a column header), and <b>Only flagged agents</b> to focus. <b>Click any agent row</b> to expand the detail.</li>
+    </ul>
+
+    <h3>Inside an expanded agent</h3>
+    Each <b>session</b> has a header bar:
+    <ul>
+      <li><b>Nailer dropped: N times</b> &mdash; nailer drops in that session.</li>
+      <li><b>In Job breaks: N</b> &mdash; breaks POM logged that session.</li>
+      <li><b>Abuse time</b> &mdash; off-work time from that session&rsquo;s abuse drops.</li>
+      <li><b>Off after</b> &mdash; time logged out after this session (next login &minus; this logout).</li>
+      <li><span class="tag r">&#9873; abuse: N drops w/o break</span> the session had abuse drops.</li>
+      <li><span class="tag a">&#9888; dropped w/o break, then off N before next login</span> an abuse drop <b>and</b> then off before the next login &mdash; i.e. dropped the nailer to take an unlogged gap.</li>
+    </ul>
+    Below the header:
+    <ul>
+      <li><span class="tag r">&#128308; Nailer dropped: &lt;date&gt;</span> one row per drop &mdash; the drop&rsquo;s date/time and how long the agent was off until the <b>date of the next job they attached to</b>.</li>
+      <li>The <b>jobs list</b> (by date/time): each campaign with Job Attach, Job Detach, Calls, Talk (min) and Breaks.</li>
+    </ul>
+
+    <h3>Colours</h3>
+    <ul>
+      <li><span class="tag r">Red</span> = abuse (drop with no break).</li>
+      <li><span class="tag a">Amber</span> = dropped w/o break, then went off before the next login.</li>
+    </ul>
+
+    <h3>How the key numbers are worked out</h3>
+    <ul>
+      <li>A <b>nailer drop</b> = a sip:100@zain.com call that ended in <i>Far End Disconnect</i>, placed into the session by its time.</li>
+      <li><b>abuse (per session)</b> = nailer drops &minus; in-job breaks.</li>
+      <li><b>abuse time</b> = the merged spans from each abuse drop to the next job attach, so parallel drops are counted once (never more than the agent&rsquo;s day).</li>
+    </ul>
+
+    <h3>How to use it day to day</h3>
+    Sort by <b>Abuse drops</b> or <b>Abuse time</b>, turn on <b>Only flagged agents</b>, open the worst agents, and read their red drop rows and amber sessions to see exactly when they dropped the nailer and how long they stayed off work.
+  </div>
+  <div class="uploader">
+    <h3>&#128194; Load the two reports</h3>
+    <div class="urow"><span>Contact detail <code>(contactdetail_1.xlsx)</code></span><input type="file" id="fDetail" accept=".xlsx,.xls"></div>
+    <div class="urow"><span>POM Agent Summary <code>(Test_PAS.xls)</code></span><input type="file" id="fPas" accept=".xls,.xlsx"></div>
+    <button id="goBtn" class="goBtn" disabled>Analyze</button>
+    <span id="upStatus" class="ustatus"></span>
+  </div>
+  <div id="dash" style="display:none">
+  <div class="note" id="note"></div>
+  <div class="cards" id="cards"></div>
+
+  <div class="panel">
+    <h2>Abuse per agent &mdash; nailer drops without a break</h2>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Search agent name or extension&hellip;">
+      <select id="sortSel">
+        <option value="abuse">Sort: Most abuse (drops w/o break)</option>
+        <option value="abuseTime">Sort: Most abuse time</option>
+        <option value="drops100">Sort: Most sip:100 drops</option>
+        <option value="ib">Sort: Most In Job Break drops</option>
+        <option value="talk">Sort: Most talk time</option>
+        <option value="name">Sort: Agent name</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="onlyRed"> Only flagged agents (abuse &gt; 0)</label>
+      <span class="pill" id="showing"></span>
+    </div>
+    <table id="tbl">
+      <thead><tr>
+        <th class="rank">#</th>
+        <th data-k="name">Agent</th>
+        <th class="num" data-k="abuse">Abuse drops<br>(no break)</th>
+        <th class="num" data-k="abuseSessions">Abuse<br>sessions</th>
+        <th class="num" data-k="abuseTime">Abuse time</th>
+        <th class="num" data-k="drops100">sip:100<br>drops</th>
+        <th class="num" data-k="ib">In Job<br>Breaks</th>
+        <th class="num" data-k="jobs">Jobs</th>
+        <th class="num" data-k="talk">Talk (min)</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="foot" id="foot"></div>
+  </div>
+  </div>
+</div>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+let DATA=null, A=[];
+const IDLE_MIN = 60;   // only show a "detached" marker for idle gaps >= 60s
+const min = s => (s/60);
+const fmtMin = s => min(s).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
+function hl(s){const q=query.toLowerCase();if(!q)return esc(s);const i=String(s).toLowerCase().indexOf(q);
+  if(i<0)return esc(s);return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length))}
+
+function initSummary(){
+const totalIB=DATA.totalIB, totalD=DATA.totalDrops100;
+const totalAbuse=A.reduce((s,a)=>s+a.abuse,0);
+const totalAbuseSess=A.reduce((s,a)=>s+a.abuseSessions,0);
+const abuseAgents=A.filter(a=>a.abuse>0).length;
+const totalDropLogoff=A.reduce((s,a)=>s+(a.dropLogoffSessions||0),0);
+const totalAbuseTime=DATA.totalAbuseTime||0;
+document.getElementById('note').innerHTML =
+  'When a nailed agent\'s <b>sip:100@zain.com</b> call drops legitimately, POM records an <b>In Job Break</b> for that session. '+
+  'So a nailer drop with <b>no matching In Job Break is abuse</b> &mdash; the agent hung up the nailer from the softphone. '+
+  'Each dropped nailer call is attributed to the login session whose Login&ndash;Logout window contains it, then compared with that '+
+  'session\'s In Job Break count: <b>abuse = nailer drops &minus; in-job breaks</b> (per session). '+
+  'Across all agents this flags <b style="color:#fca5a5">'+totalAbuse.toLocaleString()+'</b> abusive drops over <b>'+totalAbuseSess.toLocaleString()+
+  '</b> sessions by <b>'+abuseAgents+'</b> of '+A.length+' agents. '+
+  'Sessions (and agent rows) with abuse are highlighted <b style="color:#fca5a5">red</b>. '+
+  'An <b style="color:#fcd34d">&#9888; amber</b> flag marks a session where the agent dropped the nailer <b>without a break</b> and then went <b>off before the next login</b> &mdash; i.e. dropped the call to take an unlogged gap.';
+
+document.getElementById('cards').innerHTML=[
+  ['Abusive drops (no break)', totalAbuse.toLocaleString(),'red'],
+  ['Agents flagged', abuseAgents+' / '+A.length,'red'],
+  ['Sessions with abuse', totalAbuseSess.toLocaleString(),'red'],
+  ['Dropped w/o break &rarr; then off', totalDropLogoff.toLocaleString(),'red'],
+  ['sip:100 nailer drops', totalD.toLocaleString(),0],
+  ['In Job Break drops', totalIB.toLocaleString(),0],
+  ['Date period', DATA.period,0,true],
+].map(([k,v,red,small])=>`<div class="card${red?' redcard':''}"><div class="k">${k}</div><div class="v${small?' small':''}">${v}</div></div>`).join('');
+}
+
+const maxIB=Math.max(...A.map(a=>a.ib),1);
+let query='',sortKey='abuse',onlyRed=false;
+const sorters={
+  abuse:(a,b)=>b.abuse-a.abuse||b.drops100-a.drops100,
+  abuseTime:(a,b)=>b.abuseTime-a.abuseTime||b.abuse-a.abuse,
+  abuseSessions:(a,b)=>b.abuseSessions-a.abuseSessions||b.abuse-a.abuse,
+  ib:(a,b)=>b.ib-a.ib||b.drops100-a.drops100,
+  drops100:(a,b)=>b.drops100-a.drops100,
+  talk:(a,b)=>b.talk-a.talk,
+  name:(a,b)=>a.name.localeCompare(b.name),
+};
+function detailHTML(a){
+  let h='';
+  a.sessions.forEach((s,si)=>{
+    const sred=s.abuse>0;                 // nailer drop(s) without a matching In Job Break
+    h+=`<div class="sesshdr${sred?' red':''}">`
+      +`<span class="win">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)}</span>`
+      +`<span class="metric drop">Nailer dropped: <b>${s.drops}</b> time${s.drops===1?'':'s'}</span>`
+      +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
+      +(s.abuseTime>0?`<span class="metric last">Abuse time: <b>${fmtGap(s.abuseTime)}</b></span>`:'')
+      +(s.gapAfter!=null?`<span class="metric gap2" title="Time the agent was logged out after this session: next session login minus this session logout">Off after: <b>${fmtGap(s.gapAfter)}</b></span>`:'')
+      +(sred?`<span class="redbadge">&#9873; abuse: ${s.abuse} drop${s.abuse>1?'s':''} w/o break</span>`:'')
+      +(s.dropLogoff?`<span class="amberbadge">&#9888; dropped w/o break, then off ${fmtGap(s.gapAfter)} before next login</span>`:'')
+      +`</div>`;
+    h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
+    (s.dropNotes||[]).forEach(n=>{
+      const txt = n.off==null
+        ? 'no job attached afterwards'
+        : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
+      h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)} &nbsp;&middot;&nbsp; <b>Abuse time:</b> ${txt}</td></tr>`;
+    });
+    s.jobs.forEach(j=>{
+      h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
+    });
+    h+='</tbody></table>';
+    // divider between this session and the next-earlier one below it,
+    // showing the time between them (this login - previous logout)
+    if(s.gap!=null){
+      h+=`<div class="gap"><span class="gapline"></span>`
+        +`<span class="gappill">&#9203; ${fmtGap(s.gap)} off between sessions (this login &minus; previous logout)</span>`
+        +`<span class="gapline"></span></div>`;
+    }
+  });
+  return h;
+}
+function fmtGap(sec){
+  if(sec<60) return sec+' sec';
+  const m=Math.floor(sec/60), h=Math.floor(m/60);
+  if(h>0) return h+'h '+(m%60)+'m';
+  return m+' min';
+}
+function render(){
+  let list=A.filter(a=>(!query||a.name.toLowerCase().includes(query.toLowerCase())||a.ext.includes(query))&&(!onlyRed||a.abuse>0));
+  list.sort(sorters[sortKey]||sorters.abuse);
+  const tb=document.getElementById('tbody');tb.innerHTML='';
+  list.forEach((a,i)=>{
+    const tr=document.createElement('tr');tr.className='clickable'+(a.abuse>0?' redrow':'');
+    tr.innerHTML=`<td class="rank">${i+1}</td>
+      <td><span class="caret">&#9656;</span> <span class="agent">${hl(a.name)}</span> <span class="ext">${hl('#'+a.ext)}</span></td>
+      <td class="num">${a.abuse>0?'<span class="redbadge">'+a.abuse+'</span>':'0'}</td>
+      <td class="num">${a.abuseSessions||0}</td>
+      <td class="num">${a.abuseTime?'<b style="color:#fca5a5">'+fmtGap(a.abuseTime)+'</b>':'0'}</td>
+      <td class="num">${a.drops100}</td>
+      <td class="num">${a.ib}</td>
+      <td class="num">${a.jobs}</td>
+      <td class="num">${fmtMin(a.talk)}</td>`;
+    const det=document.createElement('tr');det.className='detail';det.style.display='none';
+    det.innerHTML=`<td></td><td colspan="8">${detailHTML(a)}</td>`;
+    tr.onclick=()=>{const open=det.style.display!=='none';det.style.display=open?'none':'';tr.classList.toggle('open',!open);};
+    tb.appendChild(tr);tb.appendChild(det);
+  });
+  document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each session header shows <b>Nailer dropped</b> (times the nailer dropped that session), <b>In Job breaks</b>, <b>Abuse time</b> (total time off a job caused by the abuse drops) and <b>Off after</b> (time logged out until the next login: next login &minus; this logout). The amber <b>&#9888;</b> badge = dropped w/o break then off. The red <b>&#128308; Nailer dropped</b> row gives the <b>date of each dropped nailer call</b> and its <b>abuse time</b> = time from the drop to the next job the agent attached to. Jobs are listed <b>by date/time</b>. Durations in minutes. Click a row to expand.';
+}
+document.getElementById('helpBtn').addEventListener('click',()=>{document.getElementById('help').classList.toggle('open');});
+document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
+document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
+document.getElementById('onlyRed').addEventListener('change',e=>{onlyRed=e.target.checked;render();});
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','abuseTime','drops100','ib','talk','name'].includes(sortKey)?sortKey:'abuse';render();}));
+
+/* ================= client-side compute (mirrors build.py) ================= */
+function pad2(n){return String(n).padStart(2,'0');}
+function parseDT(s){
+  if(s instanceof Date) return s;
+  s=String(s==null?'':s).trim(); if(!s) return null;
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*([AP]M)$/i);
+  if(m){ let yr=+m[3]; if(yr<100)yr+=2000; let hh=+m[4]; const ap=m[7].toUpperCase();
+    if(ap==='PM'&&hh!==12)hh+=12; if(ap==='AM'&&hh===12)hh=0;
+    return new Date(yr,+m[1]-1,+m[2],hh,+m[5],+m[6]); }
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/); // 24h fallback
+  if(m){ let yr=+m[3]; if(yr<100)yr+=2000; return new Date(yr,+m[1]-1,+m[2],+m[4],+m[5],+(m[6]||0)); }
+  return null;
+}
+function fmtDT(d){ if(!d)return null; let h=d.getHours(); const ap=h>=12?'PM':'AM'; let h12=h%12||12;
+  return pad2(d.getMonth()+1)+'/'+pad2(d.getDate())+'/'+d.getFullYear()+' '+pad2(h12)+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds())+' '+ap; }
+function fmtTime(d){ if(!d)return null; let h=d.getHours(); const ap=h>=12?'PM':'AM'; let h12=h%12||12;
+  return pad2(h12)+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds())+' '+ap; }
+function durToSec(s){ s=String(s==null?'':s).trim(); if(!s)return 0; const p=s.split(':').map(Number);
+  if(p.length===3)return p[0]*3600+p[1]*60+p[2]; if(p.length===2)return p[0]*60+p[1]; return 0; }
+function toInt(s){ const n=parseFloat(String(s==null?'':s).trim()); return isNaN(n)?0:Math.trunc(n); }
+function firstAfter(arr,x){ let lo=0,hi=arr.length; while(lo<hi){const md=(lo+hi)>>1; if(arr[md]<=x)lo=md+1; else hi=md;} return lo<arr.length?arr[lo]:null; }
+function mergeSeconds(iv){ if(!iv.length)return 0; iv=iv.slice().sort((a,b)=>a[0]-b[0]);
+  let tot=0,cs=iv[0][0],ce=iv[0][1];
+  for(let k=1;k<iv.length;k++){const st=iv[k][0],en=iv[k][1]; if(st<=ce){ if(en>ce)ce=en; } else { tot+=ce-cs; cs=st;ce=en; }}
+  tot+=ce-cs; return Math.round(tot/1000); }
+
+function parseDetail(wb){
+  const ws=wb.Sheets['Details']||wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+  const hdr=(rows[0]||[]).map(h=>String(h).trim());
+  const iD=hdr.indexOf('Destination #'), iS=hdr.indexOf('Start Time'), iU=hdr.indexOf('Duration');
+  if(iD<0||iS<0) throw new Error('contact-detail sheet missing Destination #/Start Time columns');
+  const drops={}, events={};
+  for(let r=1;r<rows.length;r++){ const row=rows[r]; if(!row)continue;
+    const mm=String(row[iD]==null?'':row[iD]).match(/sip:(\d+)@/); if(!mm)continue;
+    const ext=mm[1]; const st=parseDT(row[iS]); const sec=toInt(row[iU]);
+    const end=st?new Date(st.getTime()+sec*1000):null;
+    drops[ext]=(drops[ext]||0)+1; (events[ext]=events[ext]||[]).push({start:st,end:end}); }
+  for(const e in events) events[e].sort((a,b)=>(a.start?+a.start:1e18)-(b.start?+b.start:1e18));
+  let period=''; const sw=wb.Sheets['Summary'];
+  if(sw){ const sr=XLSX.utils.sheet_to_json(sw,{header:1,raw:false,defval:''}); if(sr[0]&&sr[0][1]!=null)period=String(sr[0][1]); }
+  return {drops:drops,events:events,period:period};
+}
+function parsePAS(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+  const C={agent:0,name:2,sid:6,login:8,logout:10,camp:13,task:17,attach:19,detach:21,cc:23,talk:25,ib:31,ibdur:33};
+  const agents={}; let cur=null, sess=null, camp='';
+  for(let r=7;r<rows.length;r++){ const row=rows[r]||[]; const cv=c=>String(row[c]==null?'':row[c]).trim();
+    const aid=cv(C.agent);
+    if(/^\d+(\.0)?$/.test(aid)){ cur=aid.replace('.0',''); const nm=cv(C.name),mm=nm.match(/\((.*?)\)/);
+      if(!agents[cur])agents[cur]={name:(mm?mm[1]:nm).trim(),ext:cur,sessions:[],ib:0,talk:0,jobs:0}; sess=null; }
+    const sid=cv(C.sid);
+    if(sid){ sess={sid:sid,login:cv(C.login),logout:cv(C.logout),jobs:[],ib:0}; if(cur)agents[cur].sessions.push(sess); }
+    const cp=cv(C.camp); if(cp)camp=cp.replace(/\s*\(.*\)/,'').trim();
+    if(cv(C.task)==='Call_100' && cv(C.attach)){ const ib=toInt(cv(C.ib));
+      const job={camp:camp,attach:cv(C.attach),detach:cv(C.detach),cc:toInt(cv(C.cc)),talk:durToSec(cv(C.talk)),ib:ib,ibdur:durToSec(cv(C.ibdur))};
+      if(!sess){ sess={sid:'?',login:'',logout:'',jobs:[],ib:0}; if(cur)agents[cur].sessions.push(sess); }
+      sess.jobs.push(job); sess.ib+=ib; if(cur){agents[cur].ib+=ib;agents[cur].talk+=job.talk;agents[cur].jobs++;} } }
+  return agents;
+}
+function computeAll(detWb,pasWb){
+  const pd=parseDetail(detWb); const drops=pd.drops, events=pd.events;
+  const agents=parsePAS(pasWb); const out=[];
+  for(const ext in agents){ const a=agents[ext];
+    a.sessions=a.sessions.filter(s=>s.jobs.length);
+    let rem=(events[ext]||[]).filter(e=>e.start);
+    for(const s of a.sessions){ const lo=parseDT(s.login),hi=parseDT(s.logout);
+      if(lo&&hi){ const ins=rem.filter(e=>e.start>=lo&&e.start<=hi); s.drops=ins.length;
+        s._ends=ins.map(e=>e.end).filter(Boolean).sort((x,y)=>x-y);
+        rem=rem.filter(e=>!(e.start>=lo&&e.start<=hi)); }
+      else { s.drops=0; s._ends=[]; }
+      s.abuse=Math.max(0,s.drops-s.ib); }
+    a.abuse=a.sessions.reduce((x,s)=>x+s.abuse,0);
+    a.abuseSessions=a.sessions.filter(s=>s.abuse>0).length;
+    a.drops100=drops[ext]||0;
+    a.sessions.sort((x,y)=>(parseDT(y.login)||0)-(parseDT(x.login)||0));
+    const attaches=[]; for(const s of a.sessions)for(const j of s.jobs){const d=parseDT(j.attach); if(d)attaches.push(d);} attaches.sort((x,y)=>x-y);
+    for(let i=0;i<a.sessions.length;i++){ const s=a.sessions[i];
+      s.gap=null;
+      if(i+1<a.sessions.length){ const hi=parseDT(s.login),lo=parseDT(a.sessions[i+1].logout); if(hi&&lo)s.gap=Math.max(0,Math.round((hi-lo)/1000)); }
+      s.gapAfter = i>0 ? a.sessions[i-1].gap : null;
+      const logout=parseDT(s.logout);
+      s.jobs.sort((x,y)=>(parseDT(x.attach)||0)-(parseDT(y.attach)||0));
+      const ends=s._ends||[]; delete s._ends;
+      const lde=ends.length?ends[ends.length-1]:null;
+      s.lastDrop=lde?fmtTime(lde):null;
+      s.dropLead=(logout&&lde&&lde<=logout)?Math.max(0,Math.round((logout-lde)/1000)):null;
+      const notes=[],iv=[];
+      for(const de of ends){ const nxt=firstAfter(attaches,de);
+        notes.push({t:fmtDT(de), off:nxt?Math.round((nxt-de)/1000):null, next:nxt?fmtDT(nxt):null, loggedOff:!!(nxt&&logout&&nxt>logout)});
+        if(nxt&&s.abuse>0)iv.push([de,nxt]); }
+      s.dropNotes=notes; s._iv=iv; s.abuseTime=mergeSeconds(iv);
+      s.dropLogoff=!!(s.abuse>0&&s.gapAfter&&s.gapAfter>=60); }
+    a.dropLogoffSessions=a.sessions.filter(s=>s.dropLogoff).length;
+    const all=[]; for(const s of a.sessions){for(const v of (s._iv||[]))all.push(v); delete s._iv;}
+    a.abuseTime=mergeSeconds(all);
+    out.push(a); }
+  return {period:pd.period,origin:'sip:100@zain.com',
+    totalDrops100:Object.values(drops).reduce((x,y)=>x+y,0),
+    totalIB:out.reduce((x,a)=>x+a.ib,0),
+    totalAbuseTime:out.reduce((x,a)=>x+a.abuseTime,0), agents:out};
+}
+function initDashboard(d){ DATA=d; A=d.agents; initSummary(); render(); document.getElementById('dash').style.display=''; }
+
+/* ================= file loader ================= */
+(function(){
+  const det=document.getElementById('fDetail'), pas=document.getElementById('fPas'),
+        btn=document.getElementById('goBtn'), st=document.getElementById('upStatus');
+  function ready(){ btn.disabled=!(det.files.length&&pas.files.length); }
+  det.addEventListener('change',ready); pas.addEventListener('change',ready);
+  function readWb(file){ return new Promise((res,rej)=>{ const fr=new FileReader();
+    fr.onload=()=>{ try{ res(XLSX.read(new Uint8Array(fr.result),{type:'array'})); }catch(e){ rej(e); } };
+    fr.onerror=()=>rej(new Error('could not read '+file.name)); fr.readAsArrayBuffer(file); }); }
+  btn.addEventListener('click',async function(){
+    btn.disabled=true; st.style.color='#94a3b8'; st.textContent='Reading files…';
+    try{ const dw=await readWb(det.files[0]); const pw=await readWb(pas.files[0]);
+      st.textContent='Calculating…';
+      const data=computeAll(dw,pw);
+      initDashboard(data);
+      st.style.color='#34d399'; st.textContent='Done — '+data.agents.length+' agents, '+data.totalDrops100+' nailer drops.';
+    }catch(e){ st.style.color='#fca5a5'; st.textContent='Error: '+e.message; console.error(e); }
+    btn.disabled=false;
+  });
+})();
+
+</script>
+</body>
+</html>
