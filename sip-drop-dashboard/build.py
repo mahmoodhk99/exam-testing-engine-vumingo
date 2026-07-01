@@ -245,40 +245,29 @@ def main():
                             else None,
                 })
             s["dropNotes"] = notes
+            # session abuse time: total off-a-job time caused by the abuse
+            # drops (the `abuse` longest drop->next-job gaps in the session).
+            drop_times = sorted((n["abuse"] for n in notes
+                                 if n["abuse"] is not None), reverse=True)
+            s["abuseTime"] = sum(drop_times[:s["abuse"]]) if s["abuse"] else 0
             # Strongest gap-abuse signal: an abuse drop (nailer hung up with no
             # In Job Break) in a session that is then followed by an unlogged
             # off-gap before the next login -- i.e. the agent dropped the
             # nailer and went off without it being logged.
             s["dropLogoff"] = bool(s["abuse"] > 0 and s["gapAfter"]
                                    and s["gapAfter"] >= MIN_GAP)
-            # Order this session's jobs chronologically (by date/time) and
-            # measure the "detached" idle time between each job's detach and
-            # the next job's attach (plus login->first attach and last
-            # detach->logout). This is the time the agent was not attached to
-            # a job -- e.g. detach 06:07:07 PM, reattach 06:17:06 PM.
-            login, logout = _dt(s["login"]), _dt(s["logout"])
+            # list this session's jobs chronologically (by date/time)
             s["jobs"].sort(key=lambda j: (_dt(j["attach"]) or datetime.min))
-            prev_end = login
-            idle_total = 0
-            for j in s["jobs"]:
-                at, de = _dt(j["attach"]), _dt(j["detach"])
-                j["idle"] = 0
-                if at and prev_end:
-                    j["idle"] = max(0, int((at - prev_end).total_seconds()))
-                    idle_total += j["idle"]
-                prev_end = de or prev_end
-            s["endIdle"] = 0
-            if logout and prev_end:
-                s["endIdle"] = max(0, int((logout - prev_end).total_seconds()))
-            idle_total += s["endIdle"]
-            s["idle"] = idle_total
         a["dropLogoffSessions"] = sum(1 for s in a["sessions"]
                                       if s["dropLogoff"])
+        a["abuseTime"] = sum(s["abuseTime"] for s in a["sessions"])
         out.append(a)
 
     data = {"period": period, "origin": "sip:100@zain.com",
             "totalDrops100": sum(drops.values()),
-            "totalIB": sum(a["ib"] for a in out), "agents": out}
+            "totalIB": sum(a["ib"] for a in out),
+            "totalAbuseTime": sum(a["abuseTime"] for a in out),
+            "agents": out}
     json.dump(data, open(os.path.join(HERE, "data.json"), "w"),
               separators=(",", ":"))
 

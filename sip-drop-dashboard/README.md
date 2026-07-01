@@ -26,7 +26,8 @@ Open **`index.html`** in any web browser (no server needed — the data is
 embedded in the file).
 
 Features:
-- Summary cards: abusive drops, agents flagged, sessions with abuse,
+- Summary cards: **total abuse time** (sum of all abuse times), abusive
+  drops, agents flagged, sessions with abuse, dropped-w/o-break-then-off,
   total sip:100 nailer drops, total In Job Break drops, date period.
 - Per-agent table: **abuse drops (no break)**, **abuse sessions**,
   **sip:100 drops**, **In Job Breaks**, job count and total talk time (in
@@ -41,13 +42,12 @@ Features:
   sessions** line shows the **away time** — from the earlier session's logout
   to the next session's login (e.g. logout 05:20:33 PM → login 05:22:37 PM =
   2 min).
-- Each session header also shows **Last drop** (how long before logout the
-  nailer last dropped) and **Off after** (off time until the next login), so
-  you can see when an agent **dropped the nailer right before logging off and
-  then took an unlogged gap**. An **⚠ amber** badge flags the strong case: a
-  session with an abuse drop (no break) that is then followed by an off-gap
-  before the next login. The summary card **Dropped w/o break → then off**
-  counts these across all agents.
+- Each session header also shows **Abuse time** (total time off a job caused
+  by that session's abuse drops) and **Off after** = the time the agent was
+  logged out after this session (next session's login − this session's
+  logout). An **⚠ amber** badge flags the strong case: a session with an
+  abuse drop (no break) that is then followed by an off-gap before the next
+  login. The summary card **Dropped w/o break → then off** counts these.
 - For every nailer drop a red **🔴 Nailer dropped** row shows the **date/time
   of the dropped call** and its **abuse time** = time from the drop until the
   next job the agent attached to (how long they stayed off a job after

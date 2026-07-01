@@ -135,6 +135,7 @@ const totalAbuse=A.reduce((s,a)=>s+a.abuse,0);
 const totalAbuseSess=A.reduce((s,a)=>s+a.abuseSessions,0);
 const abuseAgents=A.filter(a=>a.abuse>0).length;
 const totalDropLogoff=A.reduce((s,a)=>s+(a.dropLogoffSessions||0),0);
+const totalAbuseTime=DATA.totalAbuseTime||0;
 document.getElementById('note').innerHTML =
   'When a nailed agent\'s <b>sip:100@zain.com</b> call drops legitimately, POM records an <b>In Job Break</b> for that session. '+
   'So a nailer drop with <b>no matching In Job Break is abuse</b> &mdash; the agent hung up the nailer from the softphone. '+
@@ -146,6 +147,7 @@ document.getElementById('note').innerHTML =
   'An <b style="color:#fcd34d">&#9888; amber</b> flag marks a session where the agent dropped the nailer <b>without a break</b> and then went <b>off before the next login</b> &mdash; i.e. dropped the call to take an unlogged gap.';
 
 document.getElementById('cards').innerHTML=[
+  ['Total abuse time', fmtGap(totalAbuseTime),'red'],
   ['Abusive drops (no break)', totalAbuse.toLocaleString(),'red'],
   ['Agents flagged', abuseAgents+' / '+A.length,'red'],
   ['Sessions with abuse', totalAbuseSess.toLocaleString(),'red'],
@@ -172,9 +174,8 @@ function detailHTML(a){
       +`<span class="win">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)}</span>`
       +`<span class="metric drop">Nailer dropped: <b>${s.drops}</b> time${s.drops===1?'':'s'}</span>`
       +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
-      +`<span class="metric idle">Detached: <b>${fmtGap(s.idle||0)}</b></span>`
-      +(s.drops>0&&s.dropLead!=null?`<span class="metric last">Last drop: <b>${fmtGap(s.dropLead)}</b> before logout</span>`:'')
-      +(s.gapAfter!=null?`<span class="metric gap2">Off after: <b>${fmtGap(s.gapAfter)}</b></span>`:'')
+      +(s.abuseTime>0?`<span class="metric last">Abuse time: <b>${fmtGap(s.abuseTime)}</b></span>`:'')
+      +(s.gapAfter!=null?`<span class="metric gap2" title="Time the agent was logged out after this session: next session login minus this session logout">Off after: <b>${fmtGap(s.gapAfter)}</b></span>`:'')
       +(sred?`<span class="redbadge">&#9873; abuse: ${s.abuse} drop${s.abuse>1?'s':''} w/o break</span>`:'')
       +(s.dropLogoff?`<span class="amberbadge">&#9888; dropped w/o break, then off ${fmtGap(s.gapAfter)} before next login</span>`:'')
       +`</div>`;
@@ -183,13 +184,9 @@ function detailHTML(a){
       const at = n.abuse!=null ? fmtGap(n.abuse) : '&mdash; (no job attached afterwards)';
       h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)} &nbsp;&middot;&nbsp; <b>Abuse time</b> (drop &rarr; next job attach): <b>${at}</b></td></tr>`;
     });
-    s.jobs.forEach((j,ji)=>{
-      if(j.idle>=IDLE_MIN)
-        h+=`<tr class="idlerow"><td colspan="6">&#9203; detached ${fmtGap(j.idle)}${ji===0?' (after login, before first job)':' between jobs'} &mdash; not attached to any job</td></tr>`;
+    s.jobs.forEach(j=>{
       h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
     });
-    if(s.endIdle>=IDLE_MIN)
-      h+=`<tr class="idlerow"><td colspan="6">&#9203; detached ${fmtGap(s.endIdle)} (after last job, until logout) &mdash; not attached to any job</td></tr>`;
     h+='</tbody></table>';
     // divider between this session and the next-earlier one below it,
     // showing the time between them (this login - previous logout)
@@ -227,7 +224,7 @@ function render(){
     tb.appendChild(tr);tb.appendChild(det);
   });
   document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
-  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each expanded session shows its <b>Nailer drops</b> vs <b>In Job breaks</b>; the gap is the abuse count. Each session header shows <b>Nailer dropped</b> (times the sip:100 nailer dropped that session), <b>In Job breaks</b>, <b>Detached</b> (idle time not attached to a job), <b>Last drop</b> (how long before logout the nailer last dropped) and <b>Off after</b> (off time until the next login). The amber <b>&#9888;</b> badge = dropped w/o break then off. The red <b>&#128308; Nailer dropped</b> row gives the <b>date of each dropped nailer call</b> and its <b>abuse time</b> = time from the drop to the next job the agent attached to. Inside a session, jobs are listed <b>by date/time</b> and a <b>&#9203; detached&hellip;</b> row marks idle time between a job detach and the next job attach. Durations in minutes. Click a row to expand.';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each session header shows <b>Nailer dropped</b> (times the nailer dropped that session), <b>In Job breaks</b>, <b>Abuse time</b> (total time off a job caused by the abuse drops) and <b>Off after</b> (time logged out until the next login: next login &minus; this logout). The amber <b>&#9888;</b> badge = dropped w/o break then off. The red <b>&#128308; Nailer dropped</b> row gives the <b>date of each dropped nailer call</b> and its <b>abuse time</b> = time from the drop to the next job the agent attached to. Jobs are listed <b>by date/time</b>. Durations in minutes. Click a row to expand.';
 }
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
