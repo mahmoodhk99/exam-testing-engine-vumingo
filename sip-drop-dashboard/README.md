@@ -48,6 +48,10 @@ Features:
   session with an abuse drop (no break) that is then followed by an off-gap
   before the next login. The summary card **Dropped w/o break → then off**
   counts these across all agents.
+- For every nailer drop a red **🔴 Nailer dropped** row shows the **date/time
+  of the dropped call** and its **abuse time** = time from the drop until the
+  next job the agent attached to (how long they stayed off a job after
+  dropping). Shows "no job afterwards" when it was the last drop of the day.
 - Inside each session the jobs are listed **by date/time** (chronological),
   and a **⏳ detached …** row marks idle time when the agent was **not
   attached to any job** — measured as one job's detach to the next job's

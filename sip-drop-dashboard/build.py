@@ -26,6 +26,7 @@ than one (the nailer dropped more than once within the same Job
 Attach-Detach window) is flagged red. All durations are reported in
 minutes.
 """
+import bisect
 import json
 import os
 import re
@@ -189,14 +190,13 @@ def main():
             if lo and hi:
                 inside = [e for e in remaining if lo <= e["start"] <= hi]
                 s["drops"] = len(inside)
-                # latest moment the nailer actually dropped in this session
-                ends = [e["end"] for e in inside if e["end"]]
-                s["_lastDropEnd"] = max(ends) if ends else None
+                # the moments the nailer actually dropped in this session
+                s["_dropEnds"] = sorted(e["end"] for e in inside if e["end"])
                 remaining = [e for e in remaining
                              if not (lo <= e["start"] <= hi)]
             else:
                 s["drops"] = 0
-                s["_lastDropEnd"] = None
+                s["_dropEnds"] = []
             # Abuse: a nailer drop that POM did NOT record as an In Job Break
             # means the agent dropped the nailer from the softphone. Any
             # excess of drops over in-job breaks in a session is abuse.
@@ -208,6 +208,10 @@ def main():
         # and the next-earlier one: this session's login - previous logout.
         a["sessions"].sort(key=lambda s: (_dt(s["login"]) or datetime.min),
                            reverse=True)
+        # every job attach time across the agent's day (for "next job after a
+        # drop" lookups). abuse time = next attach after the drop - the drop.
+        attaches = sorted(dt for s in a["sessions"] for j in s["jobs"]
+                          if (dt := _dt(j["attach"])) is not None)
         for i, s in enumerate(a["sessions"]):
             s["gap"] = None
             if i + 1 < len(a["sessions"]):
@@ -223,10 +227,24 @@ def main():
             # dropLead = seconds from the last drop to logout (small => the
             # drop coincided with logging off).
             logout = _dt(s["logout"])
-            lde = s.pop("_lastDropEnd", None)
+            ends = s.pop("_dropEnds", [])
+            lde = ends[-1] if ends else None
             s["lastDrop"] = lde.strftime("%I:%M:%S %p") if lde else None
             s["dropLead"] = (max(0, int((logout - lde).total_seconds()))
                              if logout and lde and lde <= logout else None)
+            # one note per nailer drop: its date/time and the abuse time =
+            # time from the drop until the next job attach the agent took.
+            notes = []
+            for de in ends:
+                idx = bisect.bisect_right(attaches, de)
+                nxt = attaches[idx] if idx < len(attaches) else None
+                notes.append({
+                    "t": de.strftime("%m/%d/%Y %I:%M:%S %p"),
+                    "abuse": int((nxt - de).total_seconds()) if nxt else None,
+                    "next": nxt.strftime("%m/%d/%Y %I:%M:%S %p") if nxt
+                            else None,
+                })
+            s["dropNotes"] = notes
             # Strongest gap-abuse signal: an abuse drop (nailer hung up with no
             # In Job Break) in a session that is then followed by an unlogged
             # off-gap before the next login -- i.e. the agent dropped the
