@@ -56,6 +56,9 @@
   .sesshdr.red .metric.drop b{color:#fca5a5}
   .sess{margin:10px 0 4px;font-size:12px;color:var(--muted)}
   .sess b{color:var(--text)}
+  .gap{display:flex;align-items:center;gap:10px;margin:2px 0 6px}
+  .gapline{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+  .gappill{font-size:11px;color:#cbd5e1;background:#0f1b2e;border:1px dashed #3d5170;border-radius:999px;padding:2px 10px;white-space:nowrap}
   .detail table{font-size:12px;margin-bottom:6px}
   .detail th{color:var(--muted);cursor:default}
   .detail td{border-bottom:1px solid #1c2637;color:#cbd5e1}
@@ -151,7 +154,7 @@ const sorters={
 };
 function detailHTML(a){
   let h='';
-  a.sessions.forEach(s=>{
+  a.sessions.forEach((s,si)=>{
     const sred=s.abuse>0;                 // nailer drop(s) without a matching In Job Break
     h+=`<div class="sesshdr${sred?' red':''}">`
       +`<span class="win">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)}</span>`
@@ -164,8 +167,20 @@ function detailHTML(a){
       h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
     });
     h+='</tbody></table>';
+    // away-gap between this session and the next-earlier one below it
+    if(s.gap!=null){
+      h+=`<div class="gap"><span class="gapline"></span>`
+        +`<span class="gappill">&#9203; logged out ${fmtGap(s.gap)} between sessions</span>`
+        +`<span class="gapline"></span></div>`;
+    }
   });
   return h;
+}
+function fmtGap(sec){
+  if(sec<60) return sec+' sec';
+  const m=Math.floor(sec/60), h=Math.floor(m/60);
+  if(h>0) return h+'h '+(m%60)+'m';
+  return m+' min';
 }
 function render(){
   let list=A.filter(a=>(!query||a.name.toLowerCase().includes(query.toLowerCase())||a.ext.includes(query))&&(!onlyRed||a.abuse>0));
@@ -187,7 +202,7 @@ function render(){
     tb.appendChild(tr);tb.appendChild(det);
   });
   document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
-  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each expanded session shows its <b>Nailer drops</b> vs <b>In Job breaks</b>; the gap is the abuse count. Durations in minutes. Click a row to expand.';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each expanded session shows its <b>Nailer drops</b> vs <b>In Job breaks</b>; the gap is the abuse count. The dashed <b>&#9203; logged out&hellip;</b> line between two sessions is the away time (previous logout &rarr; next login). Durations in minutes. Click a row to expand.';
 }
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});

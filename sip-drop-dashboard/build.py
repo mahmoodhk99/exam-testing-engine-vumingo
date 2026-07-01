@@ -185,6 +185,18 @@ def main():
         a["abuse"] = sum(s["abuse"] for s in a["sessions"])
         a["abuseSessions"] = sum(1 for s in a["sessions"] if s["abuse"] > 0)
         a["drops100"] = drops.get(ext, 0)
+        # Order sessions latest-first and compute the "away" gap between each
+        # session and the next-earlier one: how long the agent was logged out
+        # between this session's login and the previous session's logout.
+        a["sessions"].sort(key=lambda s: (_dt(s["login"]) or datetime.min),
+                           reverse=True)
+        for i, s in enumerate(a["sessions"]):
+            s["gap"] = None
+            if i + 1 < len(a["sessions"]):
+                hi = _dt(s["login"])
+                lo = _dt(a["sessions"][i + 1]["logout"])
+                if hi and lo:
+                    s["gap"] = max(0, int((hi - lo).total_seconds()))
         out.append(a)
 
     data = {"period": period, "origin": "sip:100@zain.com",

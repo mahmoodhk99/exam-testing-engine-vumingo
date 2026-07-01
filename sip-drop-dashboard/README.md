@@ -37,6 +37,10 @@ Features:
   breaks the session is **red** with an `abuse: N drops w/o break` badge. The
   jobs in the session (Job Attach → Job Detach) are listed with call count,
   talk minutes and break count.
+- Between two consecutive sessions a dashed **⏳ logged out … between
+  sessions** line shows the **away time** — from the earlier session's logout
+  to the next session's login (e.g. logout 05:20:33 PM → login 05:22:37 PM =
+  2 min).
 
 ## Data sources
 1. **In Job Break Count** — from `Test_PAS.xls`, the POM Agent Summary
