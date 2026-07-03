@@ -99,66 +99,23 @@
 <div class="wrap">
   <button class="helpBtn" id="helpBtn">&#128214; How to read this dashboard</button>
   <div class="help" id="help">
-    <h3>What this dashboard finds</h3>
-    Agents who hang up the <code>sip:100@zain.com</code> <b>nailer</b> call from their softphone to dodge taking calls.
-    When a nailer drop is legitimate, POM logs an <b>In Job Break</b>. A nailer drop with <b>no matching In Job Break = abuse</b>.
+    <h3>The idea in one line</h3>
+    When an agent hangs up the <code>sip:100@zain.com</code> nailer call legitimately, POM logs an <b>In Job Break</b>.
+    A nailer drop with <b>no matching In Job Break = abuse</b> &mdash; the agent hung up to dodge calls.
 
-    <h3>Words to know</h3>
+    <h3>The table</h3>
     <ul>
-      <li><b>Nailer call (sip:100@zain.com)</b> &mdash; the always-on call that keeps an agent connected to the dialer; customer calls bridge into it.</li>
-      <li><b>In Job Break</b> &mdash; POM&rsquo;s record of a <i>legitimate</i> nailer drop while working a job.</li>
-      <li><b>Session</b> &mdash; one agent login (Login &rarr; Logout).</li>
-      <li><b>Job</b> &mdash; a campaign the agent attached to (Job Attach &rarr; Job Detach).</li>
-    </ul>
-
-    <h3>Top cards</h3>
-    <ul>
-      <li><b>Abusive drops (no break)</b> &mdash; total nailer drops with no matching break.</li>
-      <li><b>Agents flagged / Sessions with abuse</b> &mdash; how widespread it is.</li>
-      <li><b>Dropped w/o break &rarr; then off</b> &mdash; sessions where an abuse drop was followed by going off before the next login.</li>
-      <li><b>sip:100 nailer drops / In Job Break drops</b> &mdash; raw totals for reference.</li>
-    </ul>
-
-    <h3>The agent table</h3>
-    <ul>
-      <li><b>Abuse drops (no break)</b> = nailer drops &minus; in-job breaks (per agent).</li>
+      <li><b>Abuse drops</b> = nailer drops &minus; in-job breaks (per agent).</li>
       <li><b>Abuse sessions</b> = how many of the agent&rsquo;s sessions had any abuse.</li>
-      <li><b>Abuse time</b> = total off-work time caused by abuse drops (from each drop to the next job they attached to; overlapping/parallel drops counted once).</li>
-      <li><b>sip:100 drops / In Job Breaks / Jobs / Talk (min)</b> &mdash; supporting numbers.</li>
-      <li>Use the <b>search</b>, the <b>sort</b> menu (or click a column header), and <b>Only flagged agents</b> to focus. <b>Click any agent row</b> to expand the detail.</li>
-    </ul>
-
-    <h3>Inside an expanded agent</h3>
-    Each <b>session</b> has a header bar:
-    <ul>
-      <li><b>Nailer dropped: N times</b> &mdash; nailer drops in that session.</li>
-      <li><b>In Job breaks: N</b> &mdash; breaks POM logged that session.</li>
-      <li><b>Abuse time</b> &mdash; off-work time from that session&rsquo;s abuse drops.</li>
-      <li><b>Off after</b> &mdash; time logged out after this session (next login &minus; this logout).</li>
-      <li><span class="tag r">&#9873; abuse: N drops w/o break</span> the session had abuse drops.</li>
-      <li><span class="tag a">&#9888; dropped w/o break, then off N before next login</span> an abuse drop <b>and</b> then off before the next login &mdash; i.e. dropped the nailer to take an unlogged gap.</li>
-    </ul>
-    Below the header:
-    <ul>
-      <li><span class="tag r">&#128308; Nailer dropped: &lt;date&gt;</span> one row per drop &mdash; the drop&rsquo;s date/time and how long the agent was off until the <b>date of the next job they attached to</b>.</li>
-      <li>The <b>jobs list</b> (by date/time): each campaign with Job Attach, Job Detach, Calls, Talk (min) and Breaks.</li>
+      <li><b>Abuse time</b> = total off-work time caused by those drops (each drop until the next job they attached to).</li>
+      <li>Use <b>search</b>, the <b>sort</b> menu, and <b>Only flagged agents</b> to focus. <b>Click a row</b> to see each session and drop.</li>
     </ul>
 
     <h3>Colours</h3>
     <ul>
-      <li><span class="tag r">Red</span> = abuse (drop with no break).</li>
-      <li><span class="tag a">Amber</span> = dropped w/o break, then went off before the next login.</li>
+      <li><span class="tag r">Red</span> = abuse (a drop with no break).</li>
+      <li><span class="tag a">Amber</span> = dropped without a break, then went off before the next login.</li>
     </ul>
-
-    <h3>How the key numbers are worked out</h3>
-    <ul>
-      <li>A <b>nailer drop</b> = a sip:100@zain.com call that ended in <i>Far End Disconnect</i>, placed into the session by its time.</li>
-      <li><b>abuse (per session)</b> = nailer drops &minus; in-job breaks.</li>
-      <li><b>abuse time</b> = the merged spans from each abuse drop to the next job attach, so parallel drops are counted once (never more than the agent&rsquo;s day).</li>
-    </ul>
-
-    <h3>How to use it day to day</h3>
-    Sort by <b>Abuse drops</b> or <b>Abuse time</b>, turn on <b>Only flagged agents</b>, open the worst agents, and read their red drop rows and amber sessions to see exactly when they dropped the nailer and how long they stayed off work.
   </div>
   <div class="note" id="note"></div>
   <div class="cards" id="cards"></div>
@@ -172,7 +129,6 @@
         <option value="abuseTime">Sort: Most abuse time</option>
         <option value="drops100">Sort: Most sip:100 drops</option>
         <option value="ib">Sort: Most In Job Break drops</option>
-        <option value="talk">Sort: Most talk time</option>
         <option value="name">Sort: Agent name</option>
       </select>
       <label class="chk"><input type="checkbox" id="onlyRed"> Only flagged agents (abuse &gt; 0)</label>
@@ -187,8 +143,6 @@
         <th class="num" data-k="abuseTime">Abuse time</th>
         <th class="num" data-k="drops100">sip:100<br>drops</th>
         <th class="num" data-k="ib">In Job<br>Breaks</th>
-        <th class="num" data-k="jobs">Jobs</th>
-        <th class="num" data-k="talk">Talk (min)</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -226,9 +180,6 @@ document.getElementById('cards').innerHTML=[
   ['Abusive drops (no break)', totalAbuse.toLocaleString(),'red'],
   ['Agents flagged', abuseAgents+' / '+A.length,'red'],
   ['Sessions with abuse', totalAbuseSess.toLocaleString(),'red'],
-  ['Dropped w/o break &rarr; then off', totalDropLogoff.toLocaleString(),'red'],
-  ['sip:100 nailer drops', totalD.toLocaleString(),0],
-  ['In Job Break drops', totalIB.toLocaleString(),0],
   ['Date period', DATA.period,0,true],
 ].map(([k,v,red,small])=>`<div class="card${red?' redcard':''}"><div class="k">${k}</div><div class="v${small?' small':''}">${v}</div></div>`).join('');
 
@@ -252,16 +203,18 @@ function detailHTML(a){
       +`<span class="metric drop">Nailer dropped: <b>${s.drops}</b> time${s.drops===1?'':'s'}</span>`
       +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
       +(s.abuseTime>0?`<span class="metric last">Abuse time: <b>${fmtGap(s.abuseTime)}</b></span>`:'')
-      +(s.gapAfter!=null?`<span class="metric gap2" title="Time the agent was logged out after this session: next session login minus this session logout">Off after: <b>${fmtGap(s.gapAfter)}</b></span>`:'')
-      +(sred?`<span class="redbadge">&#9873; abuse: ${s.abuse} drop${s.abuse>1?'s':''} w/o break</span>`:'')
       +(s.dropLogoff?`<span class="amberbadge">&#9888; dropped w/o break, then off ${fmtGap(s.gapAfter)} before next login</span>`:'')
       +`</div>`;
     h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
     (s.dropNotes||[]).forEach(n=>{
-      const txt = n.off==null
-        ? 'no job attached afterwards'
-        : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
-      h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)} &nbsp;&middot;&nbsp; <b>Abuse time:</b> ${txt}</td></tr>`;
+      let row=`&#128308; <b>Nailer dropped:</b> ${esc(n.t)}`;
+      if(n.showAbuse){                       // only the largest drop in an overlapping group shows abuse time
+        const txt = n.off==null
+          ? 'no job attached afterwards'
+          : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
+        row+=` &nbsp;&middot;&nbsp; <b>Abuse time:</b> ${txt}`;
+      }
+      h+=`<tr class="dropnote"><td colspan="6">${row}</td></tr>`;
     });
     s.jobs.forEach(j=>{
       h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
@@ -295,22 +248,20 @@ function render(){
       <td class="num">${a.abuseSessions||0}</td>
       <td class="num">${a.abuseTime?'<b style="color:#fca5a5">'+fmtGap(a.abuseTime)+'</b>':'0'}</td>
       <td class="num">${a.drops100}</td>
-      <td class="num">${a.ib}</td>
-      <td class="num">${a.jobs}</td>
-      <td class="num">${fmtMin(a.talk)}</td>`;
+      <td class="num">${a.ib}</td>`;
     const det=document.createElement('tr');det.className='detail';det.style.display='none';
-    det.innerHTML=`<td></td><td colspan="8">${detailHTML(a)}</td>`;
+    det.innerHTML=`<td></td><td colspan="6">${detailHTML(a)}</td>`;
     tr.onclick=()=>{const open=det.style.display!=='none';det.style.display=open?'none':'';tr.classList.toggle('open',!open);};
     tb.appendChild(tr);tb.appendChild(det);
   });
   document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
-  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break (the agent hung up the nailer from the softphone). Each session header shows <b>Nailer dropped</b> (times the nailer dropped that session), <b>In Job breaks</b>, <b>Abuse time</b> (total time off a job caused by the abuse drops) and <b>Off after</b> (time logged out until the next login: next login &minus; this logout). The amber <b>&#9888;</b> badge = dropped w/o break then off. The red <b>&#128308; Nailer dropped</b> row gives the <b>date of each dropped nailer call</b> and its <b>abuse time</b> = time from the drop to the next job the agent attached to. Jobs are listed <b>by date/time</b>. Durations in minutes. Click a row to expand.';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break. <b>Click a row</b> to see each session, its drops and its abuse time. Durations are in minutes.';
 }
 document.getElementById('helpBtn').addEventListener('click',()=>{document.getElementById('help').classList.toggle('open');});
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
 document.getElementById('onlyRed').addEventListener('change',e=>{onlyRed=e.target.checked;render();});
-document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','abuseTime','drops100','ib','talk','name'].includes(sortKey)?sortKey:'abuse';render();}));
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','abuseTime','drops100','ib','name'].includes(sortKey)?sortKey:'abuse';render();}));
 render();
 </script>
 </body>

@@ -106,6 +106,40 @@ def _merge_seconds(intervals):
     return int(total)
 
 
+def _mark_groups(notes, spans):
+    """Flag which drop notes keep their "Abuse time" in the display.
+
+    Drops whose abuse windows [drop -> next job attach] overlap form one group
+    (consecutive drops in a session that all resolve to the same next attach).
+    Within a group only the drop with the largest window keeps showAbuse=True;
+    the rest are listed without an abuse time. Drops with no next attach, or
+    non-overlapping drops, each keep their own.
+    """
+    grp, g_end = [], None
+
+    def flush():
+        nonlocal grp, g_end
+        if grp:
+            best = max(grp, key=lambda i: notes[i]["off"] or 0)
+            for i in grp:
+                notes[i]["showAbuse"] = (i == best)
+        grp, g_end = [], None
+
+    for i, (de, nxt) in enumerate(spans):
+        if nxt is None:
+            flush()
+            notes[i]["showAbuse"] = True
+            continue
+        if g_end is not None and de <= g_end:
+            grp.append(i)
+            if nxt > g_end:
+                g_end = nxt
+        else:
+            flush()
+            grp, g_end = [i], nxt
+    flush()
+
+
 def load_nailer_drops(detail_path):
     """sip:100@zain.com Far-End-Disconnect drops per agent extension.
 
@@ -258,6 +292,7 @@ def main():
             # (including any logged-out time in between: that is abuse too).
             notes = []
             intervals = []
+            spans = []
             for de in ends:
                 idx = bisect.bisect_right(attaches, de)
                 nxt = attaches[idx] if idx < len(attaches) else None
@@ -270,11 +305,14 @@ def main():
                     # did the agent log out before attaching to the next job?
                     "loggedOff": bool(nxt and logout and nxt > logout),
                 })
+                spans.append((de, nxt))
                 # only abuse drops (in sessions with a drop w/o break) feed the
                 # abuse-time total; merged later so parallel drops don't double
                 # count (first drop -> next job attach is one span).
                 if nxt and s["abuse"] > 0:
                     intervals.append((de, nxt))
+            # overlapping (in-sequence) drops: show abuse time only on the largest
+            _mark_groups(notes, spans)
             s["dropNotes"] = notes
             s["_intervals"] = intervals
             s["abuseTime"] = _merge_seconds(intervals)
