@@ -223,16 +223,18 @@ function detailHTML(a){
       +`<span class="metric drop">Nailer dropped: <b>${s.drops}</b> time${s.drops===1?'':'s'}</span>`
       +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
       +(s.abuseTime>0?`<span class="metric last">Abuse time: <b>${fmtGap(s.abuseTime)}</b></span>`:'')
-      +(s.gapAfter!=null?`<span class="metric gap2" title="Time the agent was logged out after this session: next session login minus this session logout">Off after: <b>${fmtGap(s.gapAfter)}</b></span>`:'')
-      +(sred?`<span class="redbadge">&#9873; abuse: ${s.abuse} drop${s.abuse>1?'s':''} w/o break</span>`:'')
       +(s.dropLogoff?`<span class="amberbadge">&#9888; dropped w/o break, then off ${fmtGap(s.gapAfter)} before next login</span>`:'')
       +`</div>`;
     h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
     (s.dropNotes||[]).forEach(n=>{
-      const txt = n.off==null
-        ? 'no job attached afterwards'
-        : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
-      h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)} &nbsp;&middot;&nbsp; <b>Abuse time:</b> ${txt}</td></tr>`;
+      let row=`&#128308; <b>Nailer dropped:</b> ${esc(n.t)}`;
+      if(n.showAbuse){                       // only the largest drop in an overlapping group shows abuse time
+        const txt = n.off==null
+          ? 'no job attached afterwards'
+          : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
+        row+=` &nbsp;&middot;&nbsp; <b>Abuse time:</b> ${txt}`;
+      }
+      h+=`<tr class="dropnote"><td colspan="6">${row}</td></tr>`;
     });
     s.jobs.forEach(j=>{
       h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
@@ -306,6 +308,23 @@ function mergeSeconds(iv){ if(!iv.length)return 0; iv=iv.slice().sort((a,b)=>a[0
   let tot=0,cs=iv[0][0],ce=iv[0][1];
   for(let k=1;k<iv.length;k++){const st=iv[k][0],en=iv[k][1]; if(st<=ce){ if(en>ce)ce=en; } else { tot+=ce-cs; cs=st;ce=en; }}
   tot+=ce-cs; return Math.round(tot/1000); }
+// Walk the drops in time order; drops whose abuse windows [drop -> next job attach]
+// overlap form one group. Within a group only the drop with the largest abuse
+// time keeps its "Abuse time" (showAbuse=true); the rest are listed without it.
+// Drops with no next attach, or non-overlapping drops, each show their own.
+function markGroups(notes){
+  let grp=[], gEnd=null;
+  const flush=()=>{ if(!grp.length)return; let best=grp[0];
+    for(const n of grp) if((n.off||0)>(best.off||0)) best=n;
+    for(const n of grp) n.showAbuse=(n===best); grp=[]; gEnd=null; };
+  for(const n of notes){
+    if(n._nxt==null){ flush(); n.showAbuse=true; continue; }
+    if(gEnd!=null && n._de<=gEnd){ grp.push(n); if(n._nxt>gEnd)gEnd=n._nxt; }
+    else { flush(); grp=[n]; gEnd=n._nxt; }
+  }
+  flush();
+  notes.forEach(n=>{ delete n._de; delete n._nxt; });
+}
 
 function parseDetail(wb){
   const ws=wb.Sheets['Details']||wb.Sheets[wb.SheetNames[0]];
@@ -371,8 +390,9 @@ function computeAll(detWb,pasWb){
       s.dropLead=(logout&&lde&&lde<=logout)?Math.max(0,Math.round((logout-lde)/1000)):null;
       const notes=[],iv=[];
       for(const de of ends){ const nxt=firstAfter(attaches,de);
-        notes.push({t:fmtDT(de), off:nxt?Math.round((nxt-de)/1000):null, next:nxt?fmtDT(nxt):null, loggedOff:!!(nxt&&logout&&nxt>logout)});
+        notes.push({t:fmtDT(de), off:nxt?Math.round((nxt-de)/1000):null, next:nxt?fmtDT(nxt):null, loggedOff:!!(nxt&&logout&&nxt>logout), _de:de, _nxt:nxt});
         if(nxt&&s.abuse>0)iv.push([de,nxt]); }
+      markGroups(notes);                     // parallel/overlapping drops: keep abuse time only on the largest
       s.dropNotes=notes; s._iv=iv; s.abuseTime=mergeSeconds(iv);
       s.dropLogoff=!!(s.abuse>0&&s.gapAfter&&s.gapAfter>=60); }
     a.dropLogoffSessions=a.sessions.filter(s=>s.dropLogoff).length;
