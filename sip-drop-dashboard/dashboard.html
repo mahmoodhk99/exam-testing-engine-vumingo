@@ -232,7 +232,7 @@ function detailHTML(a){
         const txt = n.off==null
           ? 'no job attached afterwards'
           : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
-        row+=` &nbsp;&middot;&nbsp; <b>Abuse time:</b> ${txt}`;
+        row+=` &nbsp;&middot;&nbsp; <b>time:</b> ${txt}`;
       }
       h+=`<tr class="dropnote"><td colspan="6">${row}</td></tr>`;
     });
