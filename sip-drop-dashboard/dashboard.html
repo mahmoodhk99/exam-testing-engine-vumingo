@@ -229,9 +229,10 @@ function detailHTML(a){
     (s.dropNotes||[]).forEach(n=>{
       let row=`&#128308; <b>Nailer dropped:</b> ${esc(n.t)}`;
       if(n.showAbuse){                       // only the largest drop in an overlapping group shows abuse time
-        const txt = n.off==null
-          ? 'no job attached afterwards'
-          : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
+        let txt;
+        if(n.off==null) txt='no job attached afterwards';
+        else if(n.viaDetach) txt='off <b>'+fmtGap(n.off)+'</b> until job detach <b>'+esc(n.next)+'</b>';
+        else txt='off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
         row+=` &nbsp;&middot;&nbsp; <b>time:</b> ${txt}`;
       }
       h+=`<tr class="dropnote"><td colspan="6">${row}</td></tr>`;
@@ -388,11 +389,17 @@ function computeAll(detWb,pasWb){
       const lde=ends.length?ends[ends.length-1]:null;
       s.lastDrop=lde?fmtTime(lde):null;
       s.dropLead=(logout&&lde&&lde<=logout)?Math.max(0,Math.round((logout-lde)/1000)):null;
+      // job windows in this session: if a drop fell inside one, the agent was
+      // still working that job, so its off-work window ends at the job detach.
+      const jobwins=[]; for(const j of s.jobs){ const ja=parseDT(j.attach),jd=parseDT(j.detach); if(ja&&jd)jobwins.push([ja,jd]); }
       const notes=[],iv=[];
-      for(const de of ends){ const nxt=firstAfter(attaches,de);
-        notes.push({t:fmtDT(de), off:nxt?Math.round((nxt-de)/1000):null, next:nxt?fmtDT(nxt):null, loggedOff:!!(nxt&&logout&&nxt>logout), _de:de, _nxt:nxt});
-        if(nxt&&s.abuse>0)iv.push([de,nxt]); }
-      markGroups(notes);                     // parallel/overlapping drops: keep abuse time only on the largest
+      for(const de of ends){
+        let end=null, viaDetach=false;
+        for(const [ja,jd] of jobwins){ if(ja<=de&&de<=jd){ if(end==null||jd<end)end=jd; viaDetach=true; } }
+        if(!viaDetach) end=firstAfter(attaches,de);
+        notes.push({t:fmtDT(de), off:end?Math.round((end-de)/1000):null, next:end?fmtDT(end):null, viaDetach:viaDetach, loggedOff:!!(end&&!viaDetach&&logout&&end>logout), _de:de, _nxt:end});
+        if(end&&s.abuse>0)iv.push([de,end]); }
+      markGroups(notes);                     // overlapping drops: keep abuse time only on the largest
       s.dropNotes=notes; s._iv=iv; s.abuseTime=mergeSeconds(iv);
       s.dropLogoff=!!(s.abuse>0&&s.gapAfter&&s.gapAfter>=60); }
     a.dropLogoffSessions=a.sessions.filter(s=>s.dropLogoff).length;

@@ -209,9 +209,10 @@ function detailHTML(a){
     (s.dropNotes||[]).forEach(n=>{
       let row=`&#128308; <b>Nailer dropped:</b> ${esc(n.t)}`;
       if(n.showAbuse){                       // only the largest drop in an overlapping group shows abuse time
-        const txt = n.off==null
-          ? 'no job attached afterwards'
-          : 'off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
+        let txt;
+        if(n.off==null) txt='no job attached afterwards';
+        else if(n.viaDetach) txt='off <b>'+fmtGap(n.off)+'</b> until job detach <b>'+esc(n.next)+'</b>';
+        else txt='off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
         row+=` &nbsp;&middot;&nbsp; <b>time:</b> ${txt}`;
       }
       h+=`<tr class="dropnote"><td colspan="6">${row}</td></tr>`;
