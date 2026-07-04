@@ -287,30 +287,43 @@ def main():
             s["lastDrop"] = lde.strftime("%I:%M:%S %p") if lde else None
             s["dropLead"] = (max(0, int((logout - lde).total_seconds()))
                              if logout and lde and lde <= logout else None)
-            # one note per nailer drop: its date/time and the off time after
-            # it -- from the drop until the next job the agent attached to
-            # (including any logged-out time in between: that is abuse too).
+            # one note per nailer drop: its date/time and the off-work window
+            # after it. If the nailer dropped while the agent was STILL attached
+            # to a job (they kept working it -- e.g. still taking calls), the
+            # window ends when that job detaches, not at a far-off next attach.
+            # Only when the drop happened while NOT on any job does it run to the
+            # next job attach (agent was genuinely off work in between).
+            job_windows = [(_dt(j["attach"]), _dt(j["detach"])) for j in s["jobs"]]
+            job_windows = [(ja, jd) for ja, jd in job_windows if ja and jd]
             notes = []
             intervals = []
             spans = []
             for de in ends:
-                idx = bisect.bisect_right(attaches, de)
-                nxt = attaches[idx] if idx < len(attaches) else None
+                held = [jd for ja, jd in job_windows if ja <= de <= jd]
+                if held:
+                    end = min(held)      # the drop fell inside a job; end at its detach
+                    via_detach = True
+                else:
+                    idx = bisect.bisect_right(attaches, de)
+                    end = attaches[idx] if idx < len(attaches) else None
+                    via_detach = False
                 notes.append({
                     "t": de.strftime("%m/%d/%Y %I:%M:%S %p"),
-                    "off": int((nxt - de).total_seconds()) if nxt else None,
-                    # date/time of the next job the agent attached to
-                    "next": nxt.strftime("%m/%d/%Y %I:%M:%S %p") if nxt
+                    "off": int((end - de).total_seconds()) if end else None,
+                    # date/time the window ends: this job's detach, or next attach
+                    "next": end.strftime("%m/%d/%Y %I:%M:%S %p") if end
                             else None,
+                    "viaDetach": via_detach,
                     # did the agent log out before attaching to the next job?
-                    "loggedOff": bool(nxt and logout and nxt > logout),
+                    "loggedOff": bool(end and not via_detach and logout
+                                      and end > logout),
                 })
-                spans.append((de, nxt))
+                spans.append((de, end))
                 # only abuse drops (in sessions with a drop w/o break) feed the
-                # abuse-time total; merged later so parallel drops don't double
-                # count (first drop -> next job attach is one span).
-                if nxt and s["abuse"] > 0:
-                    intervals.append((de, nxt))
+                # abuse-time total; merged later so overlapping drops don't
+                # double count.
+                if end and s["abuse"] > 0:
+                    intervals.append((de, end))
             # overlapping (in-sequence) drops: show abuse time only on the largest
             _mark_groups(notes, spans)
             s["dropNotes"] = notes
