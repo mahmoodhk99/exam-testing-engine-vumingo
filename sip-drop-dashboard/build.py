@@ -109,11 +109,11 @@ def _merge_seconds(intervals):
 def _mark_groups(notes, spans):
     """Flag which drop notes keep their "Abuse time" in the display.
 
-    Drops whose abuse windows [drop -> next job attach] overlap form one group
-    (consecutive drops in a session that all resolve to the same next attach).
-    Within a group only the drop with the largest window keeps showAbuse=True;
-    the rest are listed without an abuse time. Drops with no next attach, or
-    non-overlapping drops, each keep their own.
+    spans[i] is (drop, window_end, skip). A skipped drop (an in-job drop that
+    is not the last one in its job -- the agent kept taking calls after it)
+    shows no abuse time and separates groups. Otherwise drops whose windows
+    overlap form one group and only the largest keeps showAbuse=True; the rest
+    are listed without a time. A drop with no window end keeps its own note.
     """
     grp, g_end = [], None
 
@@ -125,18 +125,22 @@ def _mark_groups(notes, spans):
                 notes[i]["showAbuse"] = (i == best)
         grp, g_end = [], None
 
-    for i, (de, nxt) in enumerate(spans):
-        if nxt is None:
+    for i, (de, end, skip) in enumerate(spans):
+        if skip:
+            flush()
+            notes[i]["showAbuse"] = False
+            continue
+        if end is None:
             flush()
             notes[i]["showAbuse"] = True
             continue
         if g_end is not None and de <= g_end:
             grp.append(i)
-            if nxt > g_end:
-                g_end = nxt
+            if end > g_end:
+                g_end = end
         else:
             flush()
-            grp, g_end = [i], nxt
+            grp, g_end = [i], end
     flush()
 
 
@@ -299,14 +303,23 @@ def main():
             intervals = []
             spans = []
             for de in ends:
-                held = [jd for ja, jd in job_windows if ja <= de <= jd]
-                if held:
-                    end = min(held)      # the drop fell inside a job; end at its detach
+                win = next(((ja, jd) for ja, jd in job_windows
+                            if ja <= de <= jd), None)
+                if win:
+                    ja, jd = win
+                    # while attached to a job the agent kept working (taking
+                    # calls), so only the LAST drop inside the job counts, and
+                    # only from that drop to the job detach. Earlier in-job
+                    # drops add no abuse time.
+                    is_last = not any(d2 > de and ja <= d2 <= jd for d2 in ends)
+                    end = jd if is_last else None
                     via_detach = True
+                    skip = not is_last
                 else:
                     idx = bisect.bisect_right(attaches, de)
                     end = attaches[idx] if idx < len(attaches) else None
                     via_detach = False
+                    skip = False
                 notes.append({
                     "t": de.strftime("%m/%d/%Y %I:%M:%S %p"),
                     "off": int((end - de).total_seconds()) if end else None,
@@ -318,13 +331,13 @@ def main():
                     "loggedOff": bool(end and not via_detach and logout
                                       and end > logout),
                 })
-                spans.append((de, end))
+                spans.append((de, end, skip))
                 # only abuse drops (in sessions with a drop w/o break) feed the
                 # abuse-time total; merged later so overlapping drops don't
                 # double count.
                 if end and s["abuse"] > 0:
                     intervals.append((de, end))
-            # overlapping (in-sequence) drops: show abuse time only on the largest
+            # keep abuse time only on the contributing drop(s)
             _mark_groups(notes, spans)
             s["dropNotes"] = notes
             s["_intervals"] = intervals
