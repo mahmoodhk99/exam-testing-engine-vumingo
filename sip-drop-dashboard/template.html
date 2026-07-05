@@ -126,6 +126,7 @@
         <option value="abuse">Sort: Most abuse (drops w/o break)</option>
         <option value="drops100">Sort: Most sip:100 drops</option>
         <option value="ib">Sort: Most In Job Break drops</option>
+        <option value="ibdur">Sort: Most break duration</option>
         <option value="name">Sort: Agent name</option>
       </select>
       <label class="chk"><input type="checkbox" id="onlyRed"> Only flagged agents (abuse &gt; 0)</label>
@@ -139,6 +140,7 @@
         <th class="num" data-k="abuseSessions">Abuse<br>sessions</th>
         <th class="num" data-k="drops100">sip:100<br>drops</th>
         <th class="num" data-k="ib">In Job<br>Breaks</th>
+        <th class="num" data-k="ibdur">Break<br>duration</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -185,6 +187,7 @@ const sorters={
   abuseTime:(a,b)=>b.abuseTime-a.abuseTime||b.abuse-a.abuse,
   abuseSessions:(a,b)=>b.abuseSessions-a.abuseSessions||b.abuse-a.abuse,
   ib:(a,b)=>b.ib-a.ib||b.drops100-a.drops100,
+  ibdur:(a,b)=>b.ibdur-a.ibdur||b.ib-a.ib,
   drops100:(a,b)=>b.drops100-a.drops100,
   talk:(a,b)=>b.talk-a.talk,
   name:(a,b)=>a.name.localeCompare(b.name),
@@ -233,9 +236,10 @@ function render(){
       <td class="num">${a.abuse>0?'<span class="redbadge">'+a.abuse+'</span>':'0'}</td>
       <td class="num">${a.abuseSessions||0}</td>
       <td class="num">${a.drops100}</td>
-      <td class="num">${a.ib}</td>`;
+      <td class="num">${a.ib}</td>
+      <td class="num">${a.ibdur?fmtGap(a.ibdur):'0'}</td>`;
     const det=document.createElement('tr');det.className='detail';det.style.display='none';
-    det.innerHTML=`<td></td><td colspan="5">${detailHTML(a)}</td>`;
+    det.innerHTML=`<td></td><td colspan="6">${detailHTML(a)}</td>`;
     tr.onclick=()=>{const open=det.style.display!=='none';det.style.display=open?'none':'';tr.classList.toggle('open',!open);};
     tb.appendChild(tr);tb.appendChild(det);
   });
@@ -246,7 +250,7 @@ document.getElementById('helpBtn').addEventListener('click',()=>{document.getEle
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
 document.getElementById('onlyRed').addEventListener('change',e=>{onlyRed=e.target.checked;render();});
-document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','drops100','ib','name'].includes(sortKey)?sortKey:'abuse';render();}));
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','drops100','ib','ibdur','name'].includes(sortKey)?sortKey:'abuse';render();}));
 render();
 </script>
 </body>

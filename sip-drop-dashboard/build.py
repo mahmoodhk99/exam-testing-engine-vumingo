@@ -199,7 +199,7 @@ def load_pas(pas_path):
             m = re.search(r"\((.*?)\)", cv(r, PAS["agent_name"]))
             name = (m.group(1) if m else cv(r, PAS["agent_name"])).strip()
             agents.setdefault(cur, {"name": name, "ext": cur, "sessions": [],
-                                    "ib": 0, "talk": 0, "jobs": 0})
+                                    "ib": 0, "talk": 0, "jobs": 0, "ibdur": 0})
             sess = None
         sid = cv(r, PAS["session_id"])
         if sid:
@@ -225,6 +225,7 @@ def load_pas(pas_path):
             agents[cur]["ib"] += ib
             agents[cur]["talk"] += job["talk"]
             agents[cur]["jobs"] += 1
+            agents[cur]["ibdur"] += job["ibdur"]
     return agents
 
 
