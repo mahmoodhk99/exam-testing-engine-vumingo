@@ -107,8 +107,7 @@
     <ul>
       <li><b>Abuse drops</b> = nailer drops &minus; in-job breaks (per agent).</li>
       <li><b>Abuse sessions</b> = how many of the agent&rsquo;s sessions had any abuse.</li>
-      <li><b>Abuse time</b> = total off-work time caused by those drops (each drop until the next job they attached to).</li>
-      <li>Use <b>search</b>, the <b>sort</b> menu, and <b>Only flagged agents</b> to focus. <b>Click a row</b> to see each session and drop.</li>
+      <li>Use <b>search</b>, the <b>sort</b> menu, and <b>Only flagged agents</b> to focus. <b>Click a row</b> to see each session and when the nailer was dropped.</li>
     </ul>
 
     <h3>Colours</h3>
@@ -126,7 +125,6 @@
       <input type="search" id="q" placeholder="Search agent name or extension&hellip;">
       <select id="sortSel">
         <option value="abuse">Sort: Most abuse (drops w/o break)</option>
-        <option value="abuseTime">Sort: Most abuse time</option>
         <option value="drops100">Sort: Most sip:100 drops</option>
         <option value="ib">Sort: Most In Job Break drops</option>
         <option value="name">Sort: Agent name</option>
@@ -140,7 +138,6 @@
         <th data-k="name">Agent</th>
         <th class="num" data-k="abuse">Abuse drops<br>(no break)</th>
         <th class="num" data-k="abuseSessions">Abuse<br>sessions</th>
-        <th class="num" data-k="abuseTime">Abuse time</th>
         <th class="num" data-k="drops100">sip:100<br>drops</th>
         <th class="num" data-k="ib">In Job<br>Breaks</th>
       </tr></thead>
@@ -202,20 +199,11 @@ function detailHTML(a){
       +`<span class="win">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)}</span>`
       +`<span class="metric drop">Nailer dropped: <b>${s.drops}</b> time${s.drops===1?'':'s'}</span>`
       +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
-      +(s.abuseTime>0?`<span class="metric last">Abuse time: <b>${fmtGap(s.abuseTime)}</b></span>`:'')
       +(s.dropLogoff?`<span class="amberbadge">&#9888; dropped w/o break, then off ${fmtGap(s.gapAfter)} before next login</span>`:'')
       +`</div>`;
     h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
     (s.dropNotes||[]).forEach(n=>{
-      let row=`&#128308; <b>Nailer dropped:</b> ${esc(n.t)}`;
-      if(n.showAbuse){                       // only the largest drop in an overlapping group shows abuse time
-        let txt;
-        if(n.off==null) txt='no job attached afterwards';
-        else if(n.viaDetach) txt='off <b>'+fmtGap(n.off)+'</b> until job detach <b>'+esc(n.next)+'</b>';
-        else txt='off <b>'+fmtGap(n.off)+'</b> until next job attach '+(n.loggedOff?'(logged off first) ':'')+'<b>'+esc(n.next)+'</b>';
-        row+=` &nbsp;&middot;&nbsp; <b>time:</b> ${txt}`;
-      }
-      h+=`<tr class="dropnote"><td colspan="6">${row}</td></tr>`;
+      h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)}</td></tr>`;
     });
     s.jobs.forEach(j=>{
       h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
@@ -247,22 +235,21 @@ function render(){
       <td><span class="caret">&#9656;</span> <span class="agent">${hl(a.name)}</span> <span class="ext">${hl('#'+a.ext)}</span></td>
       <td class="num">${a.abuse>0?'<span class="redbadge">'+a.abuse+'</span>':'0'}</td>
       <td class="num">${a.abuseSessions||0}</td>
-      <td class="num">${a.abuseTime?'<b style="color:#fca5a5">'+fmtGap(a.abuseTime)+'</b>':'0'}</td>
       <td class="num">${a.drops100}</td>
       <td class="num">${a.ib}</td>`;
     const det=document.createElement('tr');det.className='detail';det.style.display='none';
-    det.innerHTML=`<td></td><td colspan="6">${detailHTML(a)}</td>`;
+    det.innerHTML=`<td></td><td colspan="5">${detailHTML(a)}</td>`;
     tr.onclick=()=>{const open=det.style.display!=='none';det.style.display=open?'none':'';tr.classList.toggle('open',!open);};
     tb.appendChild(tr);tb.appendChild(det);
   });
   document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
-  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break. <b>Click a row</b> to see each session, its drops and its abuse time. Durations are in minutes.';
+  document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break. <b>Click a row</b> to see each session and when the nailer was dropped.';
 }
 document.getElementById('helpBtn').addEventListener('click',()=>{document.getElementById('help').classList.toggle('open');});
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
 document.getElementById('onlyRed').addEventListener('change',e=>{onlyRed=e.target.checked;render();});
-document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','abuseTime','drops100','ib','name'].includes(sortKey)?sortKey:'abuse';render();}));
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{sortKey=th.dataset.k;document.getElementById('sortSel').value=['abuse','drops100','ib','name'].includes(sortKey)?sortKey:'abuse';render();}));
 render();
 </script>
 </body>
