@@ -102,11 +102,11 @@
 </head>
 <body>
 <header>
-  <h1>&#128246; Nailer Drop Abuse Dashboard &mdash; sip:100@zain.com</h1>
+  <h1>Nailer Drop Abuse Dashboard &mdash; sip:100@zain.com</h1>
   <div class="sub">Flags agents who drop the nailer from the softphone: a <b>sip:100 drop with no matching In Job Break</b> = abuse</div>
 </header>
 <div class="wrap">
-  <button class="helpBtn" id="helpBtn">&#128214; How to read this dashboard</button>
+  <button class="helpBtn" id="helpBtn">How to read this dashboard</button>
   <div class="help" id="help">
     <h3>The idea in one line</h3>
     When an agent hangs up the <code>sip:100@zain.com</code> nailer call legitimately, POM logs an <b>In Job Break</b>.
@@ -122,11 +122,10 @@
     <h3>Colours</h3>
     <ul>
       <li><span class="tag r">Red</span> = abuse (a drop with no break).</li>
-      <li><span class="tag a">Amber</span> = dropped without a break, then went off before the next login.</li>
     </ul>
   </div>
   <div class="uploader">
-    <h3>&#128194; Load the two reports</h3>
+    <h3>Load the two reports</h3>
     <div class="urow"><span>Contact detail</span><input type="file" id="fDetail" accept=".xlsx,.xls"></div>
     <div class="urow"><span>POM Agent Summary</span><input type="file" id="fPas" accept=".xls,.xlsx"></div>
     <button id="goBtn" class="goBtn" disabled>Analyze</button>
@@ -189,8 +188,7 @@ document.getElementById('note').innerHTML =
   'session\'s In Job Break count: <b>abuse = nailer drops &minus; in-job breaks</b> (per session). '+
   'Across all agents this flags <b style="color:#fca5a5">'+totalAbuse.toLocaleString()+'</b> abusive drops over <b>'+totalAbuseSess.toLocaleString()+
   '</b> sessions by <b>'+abuseAgents+'</b> of '+A.length+' agents. '+
-  'Sessions (and agent rows) with abuse are highlighted <b style="color:#fca5a5">red</b>. '+
-  'An <b style="color:#fcd34d">&#9888; amber</b> flag marks a session where the agent dropped the nailer <b>without a break</b> and then went <b>off before the next login</b> &mdash; i.e. dropped the call to take an unlogged gap.';
+  'Sessions (and agent rows) with abuse are highlighted <b style="color:#fca5a5">red</b>.';
 
 document.getElementById('cards').innerHTML=[
   ['Abusive drops (no break)', totalAbuse.toLocaleString(),'red'],
@@ -219,11 +217,10 @@ function detailHTML(a){
       +`<span class="win">Session <b>${esc(s.sid)}</b> &middot; ${esc(s.login)} &rarr; ${esc(s.logout)}</span>`
       +`<span class="metric drop">Nailer dropped: <b>${s.drops}</b> time${s.drops===1?'':'s'}</span>`
       +`<span class="metric brk">In Job breaks: <b>${s.ib}</b></span>`
-      +(s.dropLogoff?`<span class="amberbadge">&#9888; dropped w/o break, then off ${fmtGap(s.gapAfter)} before next login</span>`:'')
       +`</div>`;
     h+='<table><thead><tr><th>Campaign</th><th>Job Attach</th><th>Job Detach</th><th class="num">Calls</th><th class="num">Talk (min)</th><th class="num">Breaks</th></tr></thead><tbody>';
     (s.dropNotes||[]).forEach(n=>{
-      h+=`<tr class="dropnote"><td colspan="6">&#128308; <b>Nailer dropped:</b> ${esc(n.t)}</td></tr>`;
+      h+=`<tr class="dropnote"><td colspan="6"><b>Nailer dropped:</b> ${esc(n.t)}</td></tr>`;
     });
     s.jobs.forEach(j=>{
       h+=`<tr><td>${esc(j.camp)}</td><td>${esc(j.attach)}</td><td>${esc(j.detach)}</td><td class="num">${j.cc}</td><td class="num">${fmtMin(j.talk)}</td><td class="num">${j.ib}</td></tr>`;
@@ -233,7 +230,7 @@ function detailHTML(a){
     // showing the time between them (this login - previous logout)
     if(s.gap!=null){
       h+=`<div class="gap"><span class="gapline"></span>`
-        +`<span class="gappill">&#9203; ${fmtGap(s.gap)} off between sessions (this login &minus; previous logout)</span>`
+        +`<span class="gappill">${fmtGap(s.gap)} off between sessions (this login &minus; previous logout)</span>`
         +`<span class="gapline"></span></div>`;
     }
   });
