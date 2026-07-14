@@ -98,6 +98,8 @@
   .goBtn{margin-top:12px;background:#0ea5e9;border:none;color:#04121f;font-weight:700;padding:10px 22px;border-radius:8px;font-size:14px;cursor:pointer}
   .goBtn:disabled{background:#334155;color:#64748b;cursor:not-allowed}
   .ustatus{margin-left:14px;font-size:13px}
+  .exportBtn{margin-left:auto;background:#22c55e;border:none;color:#04120a;font-weight:700;padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer}
+  .exportBtn:hover{background:#4ade80}
 </style>
 </head>
 <body>
@@ -148,6 +150,7 @@
       </select>
       <label class="chk"><input type="checkbox" id="onlyRed"> Only flagged agents (abuse &gt; 0)</label>
       <span class="pill" id="showing"></span>
+      <button id="exportBtn" class="exportBtn" type="button">Export to Excel</button>
     </div>
     <table id="tbl">
       <thead><tr>
@@ -266,6 +269,27 @@ function render(){
   document.getElementById('showing').textContent=list.length+' of '+A.length+' agents';
   document.getElementById('foot').innerHTML='<span class="legend"></span> Red = <b>abuse</b>: a sip:100@zain.com nailer drop with no matching In Job Break. <b>Click a row</b> to see each session and when the nailer was dropped.';
 }
+// Export the whole report (all agents, sessions, drops and jobs) to an Excel file.
+function exportReport(){
+  if(typeof XLSX==='undefined'){alert('Excel library not loaded.');return;}
+  const minF=s=>Math.round((s/60)*10)/10;   // seconds -> minutes (1 decimal)
+  const wb=XLSX.utils.book_new();
+  const ag=[['Agent','Extension','Abuse drops (no break)','Abuse sessions','sip:100 drops','In Job Breaks','Break duration (min)']];
+  A.forEach(a=>ag.push([a.name,a.ext,a.abuse,a.abuseSessions||0,a.drops100,a.ib,minF(a.ibdur||0)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ag),'Agents');
+  const se=[['Agent','Extension','Session ID','Login','Logout','Nailer dropped','In Job breaks']];
+  A.forEach(a=>a.sessions.forEach(s=>se.push([a.name,a.ext,s.sid,s.login,s.logout,s.drops,s.ib])));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(se),'Sessions');
+  const dr=[['Agent','Extension','Session ID','Nailer dropped (time)']];
+  A.forEach(a=>a.sessions.forEach(s=>(s.dropNotes||[]).forEach(n=>dr.push([a.name,a.ext,s.sid,n.t]))));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dr),'Nailer drops');
+  const jo=[['Agent','Extension','Session ID','Campaign','Job Attach','Job Detach','Calls','Talk (min)','Breaks']];
+  A.forEach(a=>a.sessions.forEach(s=>s.jobs.forEach(j=>jo.push([a.name,a.ext,s.sid,j.camp,j.attach,j.detach,j.cc,minF(j.talk),j.ib]))));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(jo),'Jobs');
+  const tag=(DATA.period||'').replace(/[^0-9A-Za-z]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40);
+  XLSX.writeFile(wb,'nailer-drop-report'+(tag?'_'+tag:'')+'.xlsx');
+}
+document.getElementById('exportBtn').addEventListener('click',exportReport);
 document.getElementById('helpBtn').addEventListener('click',()=>{document.getElementById('help').classList.toggle('open');});
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.trim();render();});
 document.getElementById('sortSel').addEventListener('change',e=>{sortKey=e.target.value;render();});
